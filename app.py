@@ -334,18 +334,18 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
         st.divider()
         
         # === GROUND TRUTHING / FIELD DATA INPUT ===
-            with st.form("field_data_form"):
-                lat = st.number_input("Latitude", value=gps_lat, format="%.6f")
-                lon = st.number_input("Longitude", value=gps_lon, format="%.6f")
-                desc = st.text_input("Observation / Mineral Type")
-                
-                img = st.camera_input("Take Photo")
-                
-                submitted = st.form_submit_button("Submit Field Data")
-                if submitted:
-                    st.session_state.field_service.add_submission(lat, lon, desc, img, user_name)
-                    st.toast("Field Data Point Added! 📍")
-                    st.rerun()
+        with st.form("field_data_form"):
+            lat = st.number_input("Latitude", value=gps_lat, format="%.6f")
+            lon = st.number_input("Longitude", value=gps_lon, format="%.6f")
+            desc = st.text_input("Observation / Mineral Type")
+            
+            img = st.camera_input("Take Photo")
+            
+            submitted = st.form_submit_button("Submit Field Data")
+            if submitted:
+                st.session_state.field_service.add_submission(lat, lon, desc, img, user_name)
+                st.toast("Field Data Point Added! 📍")
+                st.rerun()
         
     with col2:
         # Default Map Center (Zvishavane)
