@@ -6,6 +6,10 @@ from mineral_indices import Sentinel2Indices
 from mock_services import AkelloService, EcoCashService, GigEngine
 from api_gateway import EcoCashGateway, SmsService, EmailService, APILogger
 from auth_service import AuthService
+import pandas as pd
+import geopandas as gpd
+from shapely.geometry import Point
+from streamlit_js_eval import get_geolocation
 import folium
 from folium.plugins import Draw
 from streamlit_folium import st_folium
@@ -330,22 +334,18 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
         st.divider()
         
         # === GROUND TRUTHING / FIELD DATA INPUT ===
-        with st.expander("📍 Field Data Collection"):
-            st.caption("Upload GPS points and photos from the field.")
-            
-            # Auto-fill suggested coords if map clicked? (Advanced)
-            # For now manual input
-            fd_lat = st.number_input("Latitude", value=-20.32, format="%.6f")
-            fd_lon = st.number_input("Longitude", value=30.06, format="%.6f")
-            fd_desc = st.text_input("Observation Description", placeholder="e.g. Quartz outcrop, Vegetation stress...")
-            
-            fd_img = st.camera_input("Take Photo (Vegetation/Rock)")
-            
-            if st.button("Submit Field Data"):
-                # Save to FieldDataService
-                st.session_state.field_service.add_submission(fd_lat, fd_lon, fd_desc, fd_img, user_name)
-                st.toast("Field Data Point Added! 📍")
-                st.rerun()
+            with st.form("field_data_form"):
+                lat = st.number_input("Latitude", value=gps_lat, format="%.6f")
+                lon = st.number_input("Longitude", value=gps_lon, format="%.6f")
+                desc = st.text_input("Observation / Mineral Type")
+                
+                img = st.camera_input("Take Photo")
+                
+                submitted = st.form_submit_button("Submit Field Data")
+                if submitted:
+                    st.session_state.field_service.add_submission(lat, lon, desc, img, user_name)
+                    st.toast("Field Data Point Added! 📍")
+                    st.rerun()
         
     with col2:
         # Default Map Center (Zvishavane)

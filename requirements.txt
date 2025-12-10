@@ -8,3 +8,5 @@ streamlit-folium
 geopandas
 shapely
 qrcode
+state-db
+streamlit-js-eval
