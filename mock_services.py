@@ -152,6 +152,21 @@ class GigEngine:
                 "status": "Open",
                 "type": "Ground Truth",
                 "briefing": "Interview 5 small-scale miners about their mercury usage. Fill in the provided digital questionnaire.",
+                "question": "What is the primary health risk of mercury?",
+                "expected_answer": "Neurotoxicity",
+                "ai_grading_prompt": "Check if answer mentions 'Brain damage' or 'Nervous system'."
+            }
+        ]
+
+class MentorService:
+    """
+    Connects users with industry experts.
+    """
+    def get_mentors(self):
+        return [
+            {
+                "id": 1,
+                "name": "Mrs. S. Moyo",
                 "role": "Senior Geologist",
                 "expertise": "Exploration Geology",
                 "bio": "20+ years in gold and lithium exploration across Zimbabwe. Passionate about empowering young women in mining.",
