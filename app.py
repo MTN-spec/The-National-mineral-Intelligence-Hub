@@ -334,6 +334,18 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
         st.divider()
         
         # === GROUND TRUTHING / FIELD DATA INPUT ===
+        st.markdown("##### 📍 Log Observation")
+        st.info("Mining on mobile? Tap 'Get GPS' to fill coordinates instantly.")
+        
+        loc = get_geolocation()
+        gps_lat = -20.30
+        gps_lon = 30.00
+        
+        if loc:
+            gps_lat = loc['coords']['latitude']
+            gps_lon = loc['coords']['longitude']
+            st.success(f"GPS Locked: {gps_lat:.4f}, {gps_lon:.4f}")
+
         with st.form("field_data_form"):
             lat = st.number_input("Latitude", value=gps_lat, format="%.6f")
             lon = st.number_input("Longitude", value=gps_lon, format="%.6f")
