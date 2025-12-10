@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+users.db
+.gemini/
+*.tif
+*.tfw
+*.ovr
+*.cpg
+*.dbf
+*.shp
+*.shx
