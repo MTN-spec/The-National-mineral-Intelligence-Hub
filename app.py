@@ -317,7 +317,7 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
             if "gcp_service_account" in st.secrets:
                 try:
                     service_account = st.secrets["gcp_service_account"]
-                    credentials = ee.ServiceAccountCredentials(service_account["client_email"], key_data=service_account)
+                    credentials = ee.ServiceAccountCredentials(service_account["client_email"], key_data=service_account["private_key"])
                     ee.Initialize(credentials)
                     return True
                 except Exception as e2:
