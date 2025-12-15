@@ -348,14 +348,60 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
             with st.expander("📍 Search", expanded=False):
                  st.text_input("Place", placeholder="Search...")
             
-            # Scene Cards (Compact)
-            scenes = [
-                {"date": "13 Dec '25", "cloud": "0.1%", "sensor": "Sentinel-2", "id": "S2A"},
-                {"date": "08 Dec '25", "cloud": "12%", "sensor": "Sentinel-2", "id": "S2B"},
-                {"date": "28 Nov '25", "cloud": "2%", "sensor": "Landsat 9", "id": "L9"},
-            ]
-            sel_id = st.radio("Scene", [s["id"] for s in scenes], label_visibility="collapsed", format_func=lambda x: "")
+            # 1. Search (Placeholder for now, standard Mapbox/OSM search is better integrated in mapping tools usually)
+            with st.expander("📍 Search Location"):
+                 loc_search = st.text_input("Place Name")
             
+            if not gee_ready:
+                st.error("⚠️ Earth Engine not connected. Real data unavailable.")
+                scenes = []
+            else:
+                # 2. REAL GEE DATA QUERY
+                # Get map center (mocked logic for now as we can't easily get live bounds bi-directionally without callbacks)
+                # Ideally, we query based on a fixed Point or the last known location
+                roi = ee.Geometry.Point([default_center[1], default_center[0]])
+                
+                # Filter Sentinel-2
+                collection = (ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+                              .filterBounds(roi)
+                              .filterDate(datetime.datetime.now() - datetime.timedelta(days=30), datetime.datetime.now())
+                              .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+                              .sort('system:time_start', False)
+                              .limit(5))
+                
+                # Fetch metadata client-side
+                try:
+                    features = collection.getInfo()['features']
+                    scenes = []
+                    for f in features:
+                        props = f['properties']
+                        date = datetime.datetime.fromtimestamp(props['system:time_start']/1000).strftime('%d %b %Y')
+                        cid = f['id']
+                        scenes.append({
+                            "date": date,
+                            "cloud": f"{props['CLOUDY_PIXEL_PERCENTAGE']:.1f}%",
+                            "sensor": "Sentinel-2 L2A",
+                            "id": cid,
+                            "ee_obj": f
+                        })
+                except Exception as e:
+                    st.warning(f"Could not fetch GEE scenes: {e}")
+                    scenes = [] # Fail gracefully if query fails
+            
+            if not scenes and gee_ready:
+                st.info("No recent cloud-free images found.")
+            
+            # Scene Selector
+            # Ensure sel_id is initialized if scenes is empty
+            sel_id = None
+            if scenes:
+                sel_id = st.radio("Select Scene", [s["id"] for s in scenes], label_visibility="collapsed", format_func=lambda x: "")
+            else:
+                st.radio("Select Scene", [], label_visibility="collapsed") # Render empty radio if no scenes
+            
+            selected_scene_meta = next((s for s in scenes if s['id'] == sel_id), None)
+
+            # Render Cards
             for s in scenes:
                 color = "#00FF7F" if sel_id == s['id'] else "#555"
                 st.markdown(f"""
@@ -365,103 +411,162 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Layer Control
-            st.caption("Overlay")
-            st.checkbox("Ground Truth Points", value=True)
-            st.checkbox("Geology Vectors", value=False)
+            st.caption("Overlay Layers")
+            show_gt = st.checkbox("Ground Truth Points", value=True)
 
         with tab_tools:
             st.caption("Advanced Processing")
             
-            # 1. Select Data Type / Sensor Class
+            # 1. Select Data Type
             sensor_type = st.selectbox("Sensor Class", 
-                ["🌈 Multispectral (Optical)", "📡 Radar (SAR)", "🔬 Hyperspectral", "🧠 AI Models"],
+                ["🌈 Multispectral (Optical)", "📡 Radar (SAR)", "🧠 AI Models"],
                 help="Select the type of remote sensing data to analyze.")
             
-            index_choice = "Custom"
-            
-            # 2. Dynamic Options based on Sensor
+            vis_params = {}
+            ee_layer = None
+            layer_name = "Selection"
+
+            # 2. Dynamic Analysis Options
             if "Multispectral" in sensor_type:
-                ms_category = st.radio("Target", ["Mineral Alteration", "Vegetation & Soil"], horizontal=True, label_visibility="collapsed")
+                ms_category = st.radio("Target", ["Visual (RGB)", "Mineral Alteration", "Vegetation & Health"], horizontal=True, label_visibility="collapsed")
                 
-                if ms_category == "Mineral Alteration":
-                    index_choice = st.selectbox("Index / Ratio", 
-                        ["Iron Oxide (Red/Blue)", "Ferric Oxide (SWIR1/NIR)", "Gossan Zone", "Kaolinite/Alunite Ratio", "Hydrothermal Alteration"])
+                if ms_category == "Visual (RGB)":
+                     index_choice = "True Color"
+                elif ms_category == "Mineral Alteration":
+                    index_choice = st.selectbox("Index", ["Iron Oxide", "Ferrous Iron", "Clay Minerals", "Gossan Zone"])
                 else:
-                    index_choice = st.selectbox("Index / Ratio", 
-                        ["NDVI (Vegetation)", "SAVI (Soils)", "RE-NDVI (Red Edge)", "BSI (Bare Soil Index)"])
+                    index_choice = st.selectbox("Index", ["NDVI", "SAVI", "Moisture Index"])
             
             elif "Radar" in sensor_type:
-                sar_mode = st.selectbox("Analysis Mode", ["Lineament Extraction (Structure)", "Surface Roughness", "Flooded Area (Dielectric)"])
+                sar_mode = st.selectbox("Mode", ["Roughness (VV/VH)", "Structure/Lineaments"])
                 index_choice = f"SAR: {sar_mode}"
                 
-            elif "Hyperspectral" in sensor_type:
-                st.info("Requires Hyperion/EnMAP data.")
-                hs_target = st.selectbox("Target Mineral", ["Lithium-Pegmatite", "Carbonates", "Rare Earth Elements (REE)"])
-                index_choice = f"Hyperspectral: {hs_target}"
-                
             elif "AI Models" in sensor_type:
-                ai_model = st.selectbox("Model", ["Deep Learning Land Cover (U-Net)", "Mineral Potential Map (Predictive)", "Anomaly Detection (Isolation Forest)"])
-                st.caption(f"Using latest checkpoints for {ai_model}")
+                ai_model = st.selectbox("Model", ["Land Cover Classification (ESA WorldCover)", "Mineral Potential Heatmap"])
                 index_choice = f"AI: {ai_model}"
 
             st.divider()
              
             if st.button("⚡ Run Processing", type="primary", use_container_width=True):
-                 # Set trigger for map reload
-                 st.session_state.trigger_analysis = True
-                 # Store the selected complex mode so we can (mock) use it
-                 st.session_state.last_analysis_mode = index_choice
-                 st.rerun()
-
-            # Report Email (Compact)
-            st.markdown("---")
-            if st.button("📧 Email Report", help="Send analysis to email"):
-                 with st.spinner("Sending..."):
-                     EmailService.send_email(user_email, "GIS Report", "Analysis Results attached.")
-                     st.toast("Email Sent!")
+                 if not gee_ready:
+                     st.error("Cannot run processing: Earth Engine not connected.")
+                 elif not selected_scene_meta:
+                     st.warning("Please select an image scene first.")
+                 else:
+                     st.session_state.trigger_analysis = True
+                     st.session_state.current_analysis = {
+                         "sensor": sensor_type,
+                         "method": index_choice,
+                         "scene_id": sel_id
+                     }
+                     st.rerun()
 
         with tab_info:
-            if 'analysis_result' in st.session_state:
-                st.success("✅ Analysis Active")
-                st.json({"Max": 0.85, "Mean": 0.42, "Area": "12 km²"})
+            if gee_ready:
+                st.success("✅ GEE Connected")
             else:
-                st.info("No active analysis")
+                st.error("❌ GEE Disconnected")
+            
+            if 'current_analysis' in st.session_state and st.session_state.current_analysis:
+                st.subheader("Last Analysis:")
+                st.json(st.session_state.current_analysis)
+            else:
+                st.info("No analysis run yet.")
 
-    # --- LEFT PANEL (FULL SCREEN MAP) ---
+
+    # --- LEFT PANEL (GEEMAP) ---
     with col_map:
-        # Default Map Center
-        default_center = [-20.32, 30.06]
+        # Create Map
+        m = geemap.Map(location=default_center, zoom_start=12)
         
-        m = folium.Map(location=default_center, zoom_start=12, tiles=None, zoom_control=False) 
-        
-        # Mapbox Satellite
-        MAPBOX_TOKEN = "sk.eyJ1IjoibWhhbmR1dGFrdW5kYW5pZ2VsIiwiYSI6ImNtNnpoaDd5dTA0bHAybHNrd2pqYXR3ZmEifQ.u1NRx5Q4yTwBktfuzpXiCQ"
-        folium.TileLayer(
-            tiles=f"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{{z}}/{{x}}/{{y}}?access_token={MAPBOX_TOKEN}",
-            attr='Mapbox', name='Satellite', overlay=False, control=False
-        ).add_to(m)
+        # 1. Base Layer (Satellite)
+        m.add_basemap("HYBRID")
 
-        # Drawing Control
-        draw = Draw(export=False, position='topleft', draw_options={'rectangle': True, 'polygon':True, 'circle':False, 'marker':True})
-        draw.add_to(m)
+        # 2. Add Selected Scene (Visual)
+        if gee_ready and selected_scene_meta:
+             # Load the image
+             img = ee.Image(selected_scene_meta['id'])
+             
+             # PROCESSING LOGIC
+             active_analysis = st.session_state.get("current_analysis", {})
+             method = active_analysis.get("method", "True Color")
+             
+             final_layer = img # Default
+             v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000} # Default RGB
+             
+             if method == "True Color":
+                 final_layer = img
+                 v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
+                 
+             elif method == "NDVI":
+                 final_layer = img.normalizedDifference(['B8', 'B4']).rename('NDVI')
+                 v_params = {"min": -0.2, "max": 0.8, "palette": ['red', 'yellow', 'green']}
+                 
+             elif method == "Iron Oxide":
+                 # Red/Blue (B4 / B2) approx
+                 final_layer = img.expression("b('B4') / b('B2')").rename('Iron_Oxide')
+                 v_params = {"min": 1, "max": 3, "palette": ['blue', 'yellow', 'red']}
+                 
+             elif method == "Ferrous Iron":
+                 # SWIR1 / NIR (B11 / B8) approx
+                 final_layer = img.expression("b('B11') / b('B8')").rename('Ferrous_Iron')
+                 v_params = {"min": 0.5, "max": 2, "palette": ['blue', 'cyan', 'yellow', 'red']}
 
-        # Add Markers & Overlays (Same logic as before)
-        if 'field_service' in st.session_state:
+             elif method == "Clay Minerals":
+                 # SWIR1 / SWIR2 (B11 / B12) approx
+                 final_layer = img.expression("b('B11') / b('B12')").rename('Clay_Minerals')
+                 v_params = {"min": 1, "max": 3, "palette": ['gray', 'yellow', 'orange']}
+                 
+             elif method == "Gossan Zone":
+                 # Example: Combination of Iron Oxide and Clay Minerals
+                 iron_oxide = img.expression("b('B4') / b('B2')")
+                 clay_minerals = img.expression("b('B11') / b('B12')")
+                 final_layer = iron_oxide.add(clay_minerals).rename('Gossan_Index')
+                 v_params = {"min": 2, "max": 6, "palette": ['blue', 'green', 'yellow', 'red']}
+
+             elif method == "SAVI":
+                 # SAVI = ((NIR - RED) / (NIR + RED + L)) * (1 + L) where L=0.5
+                 L = ee.Number(0.5)
+                 final_layer = img.expression(
+                     '((NIR - RED) / (NIR + RED + L)) * (1 + L)', {
+                         'NIR': img.select('B8'),
+                         'RED': img.select('B4'),
+                         'L': L
+                     }).rename('SAVI')
+                 v_params = {"min": -0.2, "max": 0.8, "palette": ['brown', 'yellow', 'green']}
+
+             elif method == "Moisture Index":
+                 # NDMI = (NIR - SWIR1) / (NIR + SWIR1)
+                 final_layer = img.normalizedDifference(['B8', 'B11']).rename('NDMI')
+                 v_params = {"min": -1, "max": 1, "palette": ['brown', 'white', 'blue']}
+                 
+             elif "AI" in method:
+                 # Example: Load a public classification dataset
+                 # Note: This will load the *latest* WorldCover image, not necessarily tied to the selected S2 scene date/location
+                 try:
+                     final_layer = ee.ImageCollection("ESA/WorldCover/v100").filterBounds(roi).first()
+                     v_params = {"bands": ["Map"]}
+                     method = "ESA WorldCover" # Update layer name for clarity
+                 except Exception as e:
+                     st.warning(f"Could not load AI model data: {e}")
+                     final_layer = img # Fallback to original image
+                     v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
+                     method = "True Color (Fallback)"
+             
+             # Add to Map
+             m.addLayer(final_layer, v_params, method)
+             m.centerObject(img, 12)
+
+        # 3. Field Markers
+        if 'field_service' in st.session_state and show_gt:
+            # We can use folium logic on the geemap object
              for sub in st.session_state.field_service.submissions:
                  folium.Marker([sub['lat'], sub['lon']], popup=sub['desc'], icon=folium.Icon(color="green")).add_to(m)
 
-        if 'analysis_result' in st.session_state:
-             res = st.session_state.analysis_result
-             folium.raster_layers.ImageOverlay(res['image'], res['bounds'], opacity=0.7).add_to(m)
+        # RENDER MAP
+        m.to_streamlit(height=850)
 
-        # RENDER MAP (100% Height)
-        # We try to use a very large height to force scrolling pushed out, or fit viewport
-        output = st_folium(m, width=None, height=950, use_container_width=True)
-
-        # --- FLOATING ACTION BUTTON (Field Data) ---
-        # We can't do true FAB in Streamlit easily, but we can put it in a popover at the top or bottom
-        # Or just use an expander overlay effectively
+        # --- FLOATING ACTION BUTTON ---
         with st.expander("📝 Log Field Observation", expanded=False):
              with st.form("fab_log"):
                  c1, c2 = st.columns(2)
@@ -471,19 +576,6 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                  if st.form_submit_button("Submit Point"):
                      st.session_state.field_service.add_submission(lat, lon, desc, None, user_name)
                      st.rerun()
-
-        # ANALYSIS LOGIC (Simplified)
-        if st.session_state.get('trigger_analysis', False):
-             st.session_state.trigger_analysis = False # Reset
-             # Mock Result
-             height, width = 500, 500
-             res_map = np.random.uniform(0, 1, (height, width))
-             clean = np.nan_to_num(res_map)
-             norm = colors.Normalize(vmin=0, vmax=1)
-             cmap = cm.get_cmap('RdYlBu_r')
-             colored_img = cmap(norm(clean))
-             st.session_state.analysis_result = {'image': colored_img, 'bounds': [[-20.35, 30.00], [-20.28, 30.12]]}
-             st.rerun()
 
 # ==========================================
 # JOB BOARD TAB

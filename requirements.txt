@@ -9,3 +9,5 @@ geopandas
 shapely
 qrcode
 streamlit-js-eval
+earthengine-api
+geemap
