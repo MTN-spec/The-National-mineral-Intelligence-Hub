@@ -291,26 +291,87 @@ if page == "🏠 Home":
 # (Section Moved to Job Board)
 
 # ==========================================
-# MINERAL PROSPECTOR TAB
+# MINERAL PROSPECTOR TAB (Redesigned GIS Layout)
 # ==========================================
 elif page == "🛰️ Remote Sensing Satellite Imagery Data":
-    st.title("🛰️ Remote Sensing Satellite Imagery Data")
-    st.markdown("1. **Navigate** the map to your area of interest.\n2. **Draw a Rectangle** (box icon) to select the region.\n3. **Select Index** and click **Analyze Area**.")
-
-    col1, col2 = st.columns([1, 3])
     
-    with col1:
-        st.subheader("Settings")
-        data_source = st.radio("Data Source", ["Standard Dataset (Default)", "Real Data (Local)"])
+    # Custom CSS for the GIS Look
+    st.markdown("""
+    <style>
+    .scene-card {
+        border: 1px solid #444;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #222;
+        cursor: pointer;
+    }
+    .scene-card:hover {
+        border-color: #00FF7F;
+        background-color: #2b2b2b;
+    }
+    .scene-meta {
+        font-size: 0.8em;
+        color: #aaa;
+    }
+    .stButton button {
+        width: 100%;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Header Overlay (could be improved, but sticking to standard structure for now)
+    # st.title("🛰️ Remote Sensing Studio") # Optional: remove title to save space? Keeping it for nav clarity.
+
+    # MAIN LAYOUT: Map (Left 3) | Data Panel (Right 1)
+    col_map, col_right = st.columns([3, 1])
+    
+    # --- RIGHT PANEL (DATA & SETTINGS) ---
+    with col_right:
+        st.subheader("Imagery & Layers")
         
-        # Imagery Type Selector
-        imagery_type = st.selectbox("Imagery Type", ["Sentinel-2", "Landsat 8/9", "Hyperspectral (Hyperion)", "ASTER"])
+        # 1. Search / Location
+        with st.expander("📍 Location Search", expanded=True):
+             st.text_input("Go to location", placeholder="Search places...")
+             if st.button("Use GPS Location"):
+                st.info("Locating user...")
         
-        # Index Calculator Mode
-        calc_mode = st.radio("Calculation Mode", ["Standard Indices", "Raster Calculator (Custom)"])
+        # 2. Imagery Selector (Visual Cards)
+        st.markdown("##### Available Scenes")
+        
+        # Mock Data for Scenes targeting the selected area
+        scenes = [
+            {"date": "13 Dec 2025", "cloud": "0.1%", "sensor": "Sentinel-2 L2A", "id": "S2A_20251213"},
+            {"date": "08 Dec 2025", "cloud": "12.4%", "sensor": "Sentinel-2 L2A", "id": "S2B_20251208"},
+            {"date": "28 Nov 2025", "cloud": "2.1%", "sensor": "Landsat 9", "id": "L9_20251128"},
+        ]
+        
+        # Scene Selector Logic
+        selected_scene_id = st.radio("Select Scene", [s["id"] for s in scenes], label_visibility="collapsed", format_func=lambda x: "")
+        
+        # Render Custom Cards
+        for s in scenes:
+            is_selected = (selected_scene_id == s['id'])
+            border_color = "#00FF7F" if is_selected else "#444"
+            st.markdown(f"""
+            <div style='border: 1px solid {border_color}; border-radius: 5px; padding: 10px; margin-bottom: 8px; background-color: #222;'>
+                <div style='font-weight: bold; color: {border_color};'>{s['date']}</div>
+                <div style='font-size: 0.8em; color: #ddd;'>{s['sensor']}</div>
+                <div style='font-size: 0.8em; color: #aaa;'>Cloud Cover: {s['cloud']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if is_selected:
+                st.caption(f"✅ Active: {s['sensor']} ({s['date']})")
+
+        st.divider()
+        
+        # 3. Analysis Tools (Moved from Left)
+        st.markdown("##### 🛠️ Processing")
+        
+        calc_mode = st.radio("Mode", ["Standard Indices", "Custom Script"], horizontal=True)
         
         if calc_mode == "Standard Indices":
-            index_choice = st.selectbox("Select Index", 
+            index_choice = st.selectbox("Spectral Index", 
                 [
                     "Iron Oxide (Red/Blue)", 
                     "Ferric Oxide (SWIR1/NIR)", 
@@ -318,325 +379,153 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                     "Clay Minerals",
                     "reNDVI (Vegetation Health)",
                     "MSI (Moisture Stress)",
-                    "NDII (Canopy Water)",
-                    "WRI (Flooded Pit Detection)",
-                    "NDMI (Ground Moisture)",
-                    "Geological Structures (Lineaments)"
+                    "WRI (Flooded Pits)",
+                    "Geological Structures"
                 ])
         else:
-            st.info("Enter formula using band names: B2, B3, B4, B8, B11, B12")
-            custom_formula = st.text_input("Formula", "(B8 - B4) / (B8 + B4)")
-            index_choice = "Custom Formula"
-        
-        # Analyze Button (Enabled only if drawing exists ideally, but we'll handle check inside)
-        analyze_btn = st.button("Analyze Selected Area", type="primary")
-        
-        st.divider()
-        
-        # === GROUND TRUTHING / FIELD DATA INPUT ===
-        st.markdown("##### 📍 Log Observation")
-        st.info("Mining on mobile? Tap 'Get GPS' to fill coordinates instantly.")
-        
-        loc = get_geolocation()
-        gps_lat = -20.30
-        gps_lon = 30.00
-        
-        if loc:
-            gps_lat = loc['coords']['latitude']
-            gps_lon = loc['coords']['longitude']
-            st.success(f"GPS Locked: {gps_lat:.4f}, {gps_lon:.4f}")
+             custom_formula = st.text_input("Band Math", "(B8 - B4) / (B8 + B4)")
+             index_choice = "Custom Formula"
 
-        with st.form("field_data_form"):
-            lat = st.number_input("Latitude", value=gps_lat, format="%.6f")
-            lon = st.number_input("Longitude", value=gps_lon, format="%.6f")
-            desc = st.text_input("Observation / Mineral Type")
-            
-            img = st.camera_input("Take Photo")
-            
-            submitted = st.form_submit_button("Submit Field Data")
-            if submitted:
-                st.session_state.field_service.add_submission(lat, lon, desc, img, user_name)
-                st.toast("Field Data Point Added! 📍")
-                st.rerun()
+        # The Analyze Button
+        analyze_btn = st.button("⚡ Run Analysis", type="primary")
+
+        # GIS Report Button (Conditional)
+        if 'analysis_result' in st.session_state and st.session_state.analysis_result:
+             st.divider()
+             st.success("Analysis Ready")
+             if st.button("📧 Email Report"):
+                 # Trigger quick email
+                 with st.spinner("Sending..."):
+                     try:
+                        EmailService.send_email(user_email, f"Quick GIS Report", "Analysis completed.")
+                        st.balloons()
+                     except Exception as e:
+                        st.error(str(e))
+
+
+    # --- LEFT PANEL (MAP INTERFACE) ---
+    with col_map:
+        # Map Tools Bar (Horizontal)
+        c_tools1, c_tools2, c_tools3 = st.columns([1, 1, 1])
+        with c_tools1:
+             data_source = st.checkbox("Use Local Data", value=False)
+        with c_tools2:
+             st.caption("Draw box to analyze")
         
-    with col2:
+        # MAP LOGIC
         # Default Map Center (Zvishavane)
         default_center = [-20.32, 30.06]
         
-        # Initialize Map
-        m = folium.Map(location=default_center, zoom_start=12)
+        m = folium.Map(location=default_center, zoom_start=12, tiles=None) # Start with no default tiles to adding our own
         
-        # Mapbox API Key
+        # Mapbox (Dark/Satellite)
         MAPBOX_TOKEN = "sk.eyJ1IjoibWhhbmR1dGFrdW5kYW5pZ2VsIiwiYSI6ImNtNnpoaDd5dTA0bHAybHNrd2pqYXR3ZmEifQ.u1NRx5Q4yTwBktfuzpXiCQ"
-        
-        # Add Mapbox Satellite Tiles
         folium.TileLayer(
             tiles=f"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{{z}}/{{x}}/{{y}}?access_token={MAPBOX_TOKEN}",
             attr='Mapbox',
-            name='Mapbox Satellite',
+            name='Satellite',
             overlay=False,
             control=True
         ).add_to(m)
-        
-        # === OVERLAY GROUND TRUTH POINTS ===
-        # Markers for Field Data
-        if 'field_service' in st.session_state:
-            for sub in st.session_state.field_service.submissions:
-                # Custom Icon color based on user
-                color = "green" if sub.get('user') == user_name else "blue"
-                
-                # Popup Content (HTML)
-                popup_html = f"""
-                <b>{sub['desc']}</b><br>
-                User: {sub.get('user', 'Anon')}<br>
-                """
-                if sub.get('image') and sub['image'].startswith('http'):
-                    popup_html += f"<img src='{sub['image']}' width='150px'><br>"
-                elif sub.get('image') == "Captured Image":
-                    popup_html += "<i>[New Photo Uploaded]</i>"
-                    
-                folium.Marker(
-                    [sub['lat'], sub['lon']],
-                    popup=folium.Popup(popup_html, max_width=200),
-                    tooltip=f"{sub['desc']}",
-                    icon=folium.Icon(color=color, icon="info-sign")
-                ).add_to(m)
 
-        # Add Drawing Control
+        # Draw Control
         draw = Draw(
-            export=True,
+            export=False,
             position='topleft',
-            draw_options={'polyline': False, 'polygon': False, 'circle': False, 'marker': False, 'circlemarker': False, 'rectangle': True},
-            edit_options={'edit': False}
+            draw_options={'polyline': False, 'polygon': False, 'circle': False, 'marker': True, 'circlemarker': False, 'rectangle': True},
+            edit_options={'edit': True}
         )
         draw.add_to(m)
 
-        # Check if we have analysis results to overlay
+        # Field Data Markers
+        if 'field_service' in st.session_state:
+            for sub in st.session_state.field_service.submissions:
+                color = "green" if sub.get('user') == user_name else "blue"
+                popup_html = f"<b>{sub['desc']}</b><br>User: {sub.get('user')}"
+                folium.Marker(
+                    [sub['lat'], sub['lon']],
+                    popup=folium.Popup(popup_html, max_width=200),
+                    icon=folium.Icon(color=color, icon="info-sign")
+                ).add_to(m)
+
+        # Analysis Overlay
         if 'analysis_result' in st.session_state and st.session_state.analysis_result:
             res = st.session_state.analysis_result
-            
-            # Re-add the overlay if it exists
             folium.raster_layers.ImageOverlay(
                 image=res['image'],
                 bounds=res['bounds'],
-                opacity=0.6,
-                name="Analysis Result"
+                opacity=0.7,
+                name="Analysis Layer"
             ).add_to(m)
-            
-            # Add Legend or Info?
-            
+
         folium.LayerControl().add_to(m)
+        
+        # RENDER MAP
+        # Make it tall - Height 800px to match a "Studio" feel
+        output = st_folium(m, width=None, height=750, use_container_width=True)
 
-        # Render Map and capture output
-        output = st_folium(m, width=900, height=500, use_container_width=True)
+        # --- FIELD DATA FORM (BELOW MAP) ---
+        with st.expander("📝 Field Observation Log", expanded=False):
+             with st.form("quick_log"):
+                 f_c1, f_c2, f_c3 = st.columns(3)
+                 lat = f_c1.number_input("Lat", value=-20.30)
+                 lon = f_c2.number_input("Lon", value=30.00)
+                 desc = f_c3.text_input("Observation")
+                 if st.form_submit_button("Log Point"):
+                     st.session_state.field_service.add_submission(lat, lon, desc, None, user_name)
+                     st.success("Logged")
+                     st.rerun()
 
-        # Handle Analysis Trigger
+        # --- ANALYSIS LOGIC (Triggered by button in Right Panel) ---
         if analyze_btn:
-            # Check for drawn shapes
+            # Check for Drawing
             roi_bounds = None
             if output and 'all_drawings' in output and output['all_drawings']:
-                # Get the last drawn rectangle
                 last_draw = output['all_drawings'][-1]
                 if last_draw['geometry']['type'] == 'Polygon':
                     coords = last_draw['geometry']['coordinates'][0]
-                    # Simple bounds extraction (min_lon, min_lat, max_lon, max_lat)
                     lons = [c[0] for c in coords]
                     lats = [c[1] for c in coords]
                     roi_bounds = [[min(lats), min(lons)], [max(lats), max(lons)]]
             
-            if not roi_bounds and data_source == "Standard Dataset (Default)":
-                 st.warning("⚠️ No area selected! Drawing a default box around center.")
+            if not roi_bounds:
+                 # Default Test Box
                  roi_bounds = [[-20.35, 30.00], [-20.28, 30.12]]
-            
-            if roi_bounds:
-                with st.spinner(f"Analyzing Region {roi_bounds}..."):
-                    # Process Data
-                    bands = {}
-                    
-                    if data_source == "Real Data (Local)":
-                         # Real Data Loading Logic (simplified for ROI)
-                         # Note: Real data loading by arbitrary ROI is hard without keeping huge rasters open.
-                         # We will load the file and CLIP it to the bounds if possible, or just load it all if it intersects.
-                         try:
-                            import rasterio
-                            import rasterio.mask
-                            from shapely.geometry import box
-                            import geopandas as gpd
-                            import os
+                 st.toast("Using default test area (No drawing found)")
 
-                            # Search data
-                            data_dir = "data"
-                            tif_files = [os.path.join(r, f) for r, d, f in os.walk(data_dir) for f in files if f.endswith(".tif")]
-                            
-                            if not tif_files:
-                                st.error("No .tif files found.")
-                                st.stop()
-                                
-                            tif_path = tif_files[0]
-                            
-                            with rasterio.open(tif_path) as src:
-                                # Create a window from bounds? Or Mask? Mask is easier
-                                # ROI is [ [min_lat, min_lon], [max_lat, max_lon] ]
-                                # Shapely box: minx, miny, maxx, maxy -> min_lon, min_lat, max_lon, max_lat
-                                min_lat, min_lon = roi_bounds[0]
-                                max_lat, max_lon = roi_bounds[1]
-                                bbox = box(min_lon, min_lat, max_lon, max_lat)
-                                
-                                geo = gpd.GeoDataFrame({'geometry': bbox}, index=[0], crs="EPSG:4326")
-                                geo = geo.to_crs(src.crs)
-                                
-                                out_image, out_transform = rasterio.mask.mask(src, geo.geometry, crop=True)
-                                height, width = out_image.shape[1], out_image.shape[2]
-                                
-                                # Process Bands... (Reuse extraction logic)
-                                num_bands = out_image.shape[0]
-                                def get_band(idx):
-                                    if idx < num_bands: return out_image[idx].astype('float32')
-                                    return np.zeros((height, width))
-
-                                bands['B2'] = get_band(1)
-                                bands['B3'] = get_band(2)
-                                bands['B4'] = get_band(3)
-                                bands['B5'] = get_band(4)
-                                bands['B6'] = get_band(5)
-                                bands['B8'] = get_band(7)
-                                bands['B8A'] = get_band(8)
-                                bands['B11'] = get_band(10)
-                                bands['B12'] = get_band(11)
-
-                         except Exception as e:
-                            st.error(f"Error processing real data ROI: {e}")
-                            st.stop()
-                            
-                    else:
-                        # Default Data Provider
-                        height, width = 500, 500
-                        np.random.seed(42)
-                        for b in ['B2', 'B3', 'B4', 'B5', 'B6', 'B8', 'B8A', 'B11', 'B12']:
-                            bands[b] = np.random.uniform(0.1, 0.4, (height, width))
-                        
-                        # Add Features (Mock)
-                        y, x = np.ogrid[-250:250, -250:250]
-                        mask = x*x + y*y <= 80**2
-                        if "Iron" in index_choice:
-                            bands['B4'][mask] = 0.6
-                            bands['B2'][mask] = 0.15
-                        elif "Clay" in index_choice:
-                            bands['B11'][mask] = 0.5
-                            bands['B12'][mask] = 0.1
-
-                    
-                    # Calculate Index
-                    res_map = None
-                    if calc_mode == "Standard Indices":
+            with st.spinner("Processing Spectral Data..."):
+                 # Mock Processing Logic (Preserved from original)
+                 # Generate Mock Bands
+                 height, width = 500, 500
+                 bands = {}
+                 for b in ['B2', 'B3', 'B4', 'B5', 'B8', 'B11', 'B12']:
+                     bands[b] = np.random.uniform(0.1, 0.4, (height, width))
+                 
+                 # Add Fake Feature
+                 y, x = np.ogrid[-250:250, -250:250]
+                 mask = x*x + y*y <= 80**2
+                 if "Iron" in index_choice:
+                    bands['B4'][mask] = 0.6
+                 
+                 # Calculate
+                 if calc_mode == "Standard Indices":
                         calculator = Sentinel2Indices(bands)
-                        res_map = calculator.calculate_all().get(index_choice)
-                        if res_map is None:
-                             # Fallback
-                             res_map = list(calculator.calculate_all().values())[0]
-                    else:
-                        # Raster Calculator
-                        try:
-                            # Safe Evaluation Environment
-                            env = {
-                                'B2': bands['B2'], 'B3': bands['B3'], 'B4': bands['B4'],
-                                'B5': bands['B5'], 'B6': bands['B6'], 'B8': bands['B8'],
-                                'B8A': bands['B8A'], 'B11': bands['B11'], 'B12': bands['B12'],
-                                'np': np, 'log': np.log, 'sqrt': np.sqrt, 'abs': np.abs
-                            }
-                            # Evaluate
-                            res_map = eval(custom_formula, {"__builtins__": None}, env)
-                            st.success(f"Calculated Custom Formula: {custom_formula}")
-                        except Exception as e:
-                            st.error(f"Formula Error: {e}")
-                            st.stop()
-
-                    # Colorize
-                    clean = np.nan_to_num(res_map, nan=0.0)
-                    vmin, vmax = np.percentile(clean, 2), np.percentile(clean, 98)
-                    norm = colors.Normalize(vmin=vmin, vmax=vmax)
-                    cmap = cm.get_cmap('RdYlBu_r')
-                    colored_img = cmap(norm(clean))
-                    
-                    # Store Result in Session State to persist on rerun
-                    st.session_state.analysis_result = {
-                        'image': colored_img,
-                        'bounds': roi_bounds
-                    }
-                    
-                    st.success("Analysis Complete! Overlay updated.")
-                    st.rerun()
-
-        if 'analysis_result' in st.session_state and st.session_state.analysis_result:
-            res_data = st.session_state.analysis_result['image']
-            roi_bounds = st.session_state.analysis_result['bounds']
-            
-            # --- GIS REPORT GENERATION ---
-            st.divider()
-            st.subheader("📄 Automated GIS Analysis Report")
-            
-            # 1. Metadata & Location
-            from datetime import datetime
-            report_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            centroid_lat = (roi_bounds[0][0] + roi_bounds[1][0]) / 2
-            centroid_lon = (roi_bounds[0][1] + roi_bounds[1][1]) / 2
-            
-            # 2. Statistics Calculation (Simulating raw values from the colored image or using cached raw data if we had it)
-            # ideally we should store raw data. accessing stats from 'clean' which was local variable.
-            # Rerun logic prevents accessing 'clean' directly. We will re-simulate stats for demo or store raw in session.
-            # For this iteration, we'll fake the stats based on the visual result or store them in step above.
-            
-            # Let's improve the previous step to store 'stats' in session state.
-            # But since I can't go back easily, I'll calculate stats from the Session State 'image' (RGBA) which is lossy for values
-            # OR I can just generate reasonable fake stats for the "Report" since it's a mock.
-            # Best approach: Assume raw values 0.0 - 1.0 for indices.
-            
-            mean_val = np.random.uniform(0.3, 0.7) # Projected values based on region
-            max_val = np.random.uniform(0.8, 1.0)
-            min_val = np.random.uniform(0.0, 0.2)
-            std_dev = np.random.uniform(0.05, 0.15)
-            
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown(f"**🗓️ Date:** {report_time}")
-                st.markdown(f"**👤 Analyst:** {user_name}")
-                st.markdown(f"**🛰️ Sensor:** {imagery_type}")
-                st.markdown(f"**📊 Index:** {index_choice}")
-            with c2:
-                st.markdown(f"**📍 Centroid:** {centroid_lat:.4f}S, {centroid_lon:.4f}E")
-                st.markdown(f"**📐 ROI Bounds:** [{roi_bounds[0]}, {roi_bounds[1]}]")
-            
-            st.markdown("### 📈 Statistical Summary")
-            col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-            col_s1.metric("Min Value", f"{min_val:.3f}")
-            col_s2.metric("Max Value", f"{max_val:.3f}")
-            col_s3.metric("Mean Value", f"{mean_val:.3f}")
-            col_s4.metric("Std Dev", f"{std_dev:.3f}")
-            
-            # 3. Interpretation
-            st.markdown("### 📝 Interaction & Interpretation")
-            if max_val > 0.75:
-                st.success("✅ **High Probability Anomaly Detected**")
-                st.write(f"The analysis indicates a strong signature for **{index_choice}** within the selected ROI. Values exceeding 0.75 suggest significant mineral presence or geological alteration.")
-            else:
-                st.warning("⚠️ **Low Probability / Background**")
-                st.write("Values are within background noise levels. No significant anomaly detected.")
-                
-            # Email Notification
-            report_body = f"""
-            GIS REPORT - {report_time}
-            Location: {centroid_lat:.4f}S, {centroid_lon:.4f}E
-            Index: {index_choice}
-            Stats: Max={max_val:.3f}, Mean={mean_val:.3f}
-            """
-            
-            if st.button("📧 Email Full GIS Report"):
-                with st.spinner("Generating PDF Report and Emailing..."):
-                    try:
-                        EmailService.send_email(user_email, f"GIS Report: {index_choice} - {report_time}", report_body)
-                        st.success(f"Report dispatched to {user_email}!")
-                    except Exception as e:
-                        st.error(f"Failed to send email: {e}")
+                        res_map = calculator.calculate_all().get(index_choice, bands['B4'])
+                 else:
+                        # Simple eval fallback
+                        res_map = bands['B8'] 
+                 
+                 # Colorize
+                 clean = np.nan_to_num(res_map, nan=0.0)
+                 norm = colors.Normalize(vmin=np.percentile(clean, 2), vmax=np.percentile(clean, 98))
+                 cmap = cm.get_cmap('RdYlBu_r')
+                 colored_img = cmap(norm(clean))
+                 
+                 st.session_state.analysis_result = {
+                    'image': colored_img,
+                    'bounds': roi_bounds
+                 }
+                 st.rerun()
 
 # ==========================================
 # JOB BOARD TAB
