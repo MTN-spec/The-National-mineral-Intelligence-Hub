@@ -17,7 +17,12 @@ import matplotlib.cm as cm
 import matplotlib.colors as colors
 
 # Page Config
-st.set_page_config(page_title="The National Mineral Intelligence Hub", page_icon="⛏️", layout="wide")
+st.set_page_config(
+    page_title="The National Mineral Intelligence Hub", 
+    page_icon="⛏️", 
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
 # Initialize Auth Service
 import auth_service
@@ -295,9 +300,20 @@ if page == "🏠 Home":
 # ==========================================
 elif page == "🛰️ Remote Sensing Satellite Imagery Data":
     
-    # Custom CSS for the GIS Look
+    # Custom CSS for the GIS Look & Full Screen
     st.markdown("""
     <style>
+    /* Maximize Screen Real Estate */
+    .appview-container .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        max-width: 100%;
+    }
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    
     .scene-card {
         border: 1px solid #444;
         border-radius: 5px;
@@ -316,6 +332,10 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
     }
     .stButton button {
         width: 100%;
+    }
+    /* Hide the full-screen button on images inside cards */
+    button[title="View fullscreen"] {
+        display: none;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -461,8 +481,8 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
         folium.LayerControl().add_to(m)
         
         # RENDER MAP
-        # Make it tall - Height 800px to match a "Studio" feel
-        output = st_folium(m, width=None, height=750, use_container_width=True)
+        # Make it tall - Height 850px to match a "Studio" feel
+        output = st_folium(m, width=None, height=850, use_container_width=True)
 
         # --- FIELD DATA FORM (BELOW MAP) ---
         with st.expander("📝 Field Observation Log", expanded=False):
