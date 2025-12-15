@@ -303,6 +303,32 @@ if page == "🏠 Home":
 # ==========================================
 elif page == "🛰️ Remote Sensing Satellite Imagery Data":
     
+    # --- GEE IMPORT & INITIALIZATION ---
+    import ee
+    import geemap.foliumap as geemap
+    
+    def initialize_gee():
+        """Initializes Earth Engine safely."""
+        try:
+            ee.Initialize()
+            return True
+        except Exception as e:
+            # Try using service account from secrets if available
+            if "gcp_service_account" in st.secrets:
+                try:
+                    service_account = st.secrets["gcp_service_account"]
+                    credentials = ee.ServiceAccountCredentials(service_account["client_email"], key_data=service_account)
+                    ee.Initialize(credentials)
+                    return True
+                except Exception as e2:
+                    st.error(f"GEE Auth Failed: {e2}")
+                    return False
+            else:
+                st.warning("GEE Not Authenticated. Access restricted. Please set credentials in secrets.toml.")
+                return False
+
+    gee_ready = initialize_gee()
+    
     # Custom CSS for Fixed 100vh Layout
     st.markdown("""
     <style>
