@@ -371,18 +371,47 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
             st.checkbox("Geology Vectors", value=False)
 
         with tab_tools:
-            st.caption("Analysis")
-            # Compact Inputs
-            calc_mode = st.selectbox("Mode", ["Indices", "Custom"], label_visibility="collapsed")
-            if calc_mode == "Indices":
-                index_choice = st.selectbox("Index", ["Iron Oxide", "Clay", "Vegetation (NDVI)", "Moisture"], label_visibility="collapsed")
-            else:
-                custom_formula = st.text_input("Formula", "(B8-B4)/(B8+B4)")
-                index_choice = "Custom"
+            st.caption("Advanced Processing")
+            
+            # 1. Select Data Type / Sensor Class
+            sensor_type = st.selectbox("Sensor Class", 
+                ["🌈 Multispectral (Optical)", "📡 Radar (SAR)", "🔬 Hyperspectral", "🧠 AI Models"],
+                help="Select the type of remote sensing data to analyze.")
+            
+            index_choice = "Custom"
+            
+            # 2. Dynamic Options based on Sensor
+            if "Multispectral" in sensor_type:
+                ms_category = st.radio("Target", ["Mineral Alteration", "Vegetation & Soil"], horizontal=True, label_visibility="collapsed")
                 
-            if st.button("⚡ Analyze", type="primary", use_container_width=True):
+                if ms_category == "Mineral Alteration":
+                    index_choice = st.selectbox("Index / Ratio", 
+                        ["Iron Oxide (Red/Blue)", "Ferric Oxide (SWIR1/NIR)", "Gossan Zone", "Kaolinite/Alunite Ratio", "Hydrothermal Alteration"])
+                else:
+                    index_choice = st.selectbox("Index / Ratio", 
+                        ["NDVI (Vegetation)", "SAVI (Soils)", "RE-NDVI (Red Edge)", "BSI (Bare Soil Index)"])
+            
+            elif "Radar" in sensor_type:
+                sar_mode = st.selectbox("Analysis Mode", ["Lineament Extraction (Structure)", "Surface Roughness", "Flooded Area (Dielectric)"])
+                index_choice = f"SAR: {sar_mode}"
+                
+            elif "Hyperspectral" in sensor_type:
+                st.info("Requires Hyperion/EnMAP data.")
+                hs_target = st.selectbox("Target Mineral", ["Lithium-Pegmatite", "Carbonates", "Rare Earth Elements (REE)"])
+                index_choice = f"Hyperspectral: {hs_target}"
+                
+            elif "AI Models" in sensor_type:
+                ai_model = st.selectbox("Model", ["Deep Learning Land Cover (U-Net)", "Mineral Potential Map (Predictive)", "Anomaly Detection (Isolation Forest)"])
+                st.caption(f"Using latest checkpoints for {ai_model}")
+                index_choice = f"AI: {ai_model}"
+
+            st.divider()
+             
+            if st.button("⚡ Run Processing", type="primary", use_container_width=True):
                  # Set trigger for map reload
                  st.session_state.trigger_analysis = True
+                 # Store the selected complex mode so we can (mock) use it
+                 st.session_state.last_analysis_mode = index_choice
                  st.rerun()
 
             # Report Email (Compact)
