@@ -32,16 +32,46 @@ class SmsService:
         APILogger.log("SMS_Gateway", "POST", "/v1/sms/send", payload, 200, response)
         return True
 
+import smtplib
+import ssl
+from email.message import EmailMessage
+import streamlit as st
+
 class EmailService:
     @staticmethod
     def send_email(to_email, subject, body):
-        """Simulate sending an email."""
-        payload = {"to": to_email, "subject": subject, "body": body}
-        time.sleep(0.8)
-        
-        response = {"status": "sent", "timestamp": datetime.datetime.now().isoformat()}
-        APILogger.log("SMTP_Server", "POST", "/mail/send", payload, 202, response)
-        return True
+        """Sends a real email using Gmail SMTP and Streamlit secrets."""
+        try:
+            # 1. Get Credentials
+            if "email" not in st.secrets:
+                raise ValueError("Missing [email] section in .streamlit/secrets.toml")
+            
+            sender_email = st.secrets["email"]["address"]
+            sender_password = st.secrets["email"]["password"] # App Password
+
+            # 2. Construct Message
+            msg = EmailMessage()
+            msg.set_content(body)
+            msg["Subject"] = subject
+            msg["From"] = sender_email
+            msg["To"] = to_email
+
+            # 3. Connect to Gmail SMTP (SSL)
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+                server.login(sender_email, sender_password)
+                server.send_message(msg)
+            
+            response = {"status": "sent", "timestamp": datetime.datetime.now().isoformat()}
+            APILogger.log("SMTP_Server (Real)", "POST", "/mail/send", {"to": to_email, "subject": subject}, 200, response)
+            return True
+
+        except Exception as e:
+            error_msg = f"Failed to send email: {str(e)}"
+            # Log the error but raise it so the UI knows
+            APILogger.log("SMTP_Server", "ERROR", "/mail/send", {"error": str(e)}, 500, {})
+            # We want to be strict, so we re-raise or return False
+            raise e
 
 class EcoCashGateway:
     @staticmethod

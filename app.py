@@ -632,8 +632,11 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
             
             if st.button("📧 Email Full GIS Report"):
                 with st.spinner("Generating PDF Report and Emailing..."):
-                    EmailService.send_email(user_email, f"GIS Report: {index_choice} - {report_time}", report_body)
-                    st.success("Report dispatched to registered email!")
+                    try:
+                        EmailService.send_email(user_email, f"GIS Report: {index_choice} - {report_time}", report_body)
+                        st.success(f"Report dispatched to {user_email}!")
+                    except Exception as e:
+                        st.error(f"Failed to send email: {e}")
 
 # ==========================================
 # JOB BOARD TAB
