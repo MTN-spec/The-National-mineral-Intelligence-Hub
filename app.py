@@ -360,6 +360,9 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
     </style>
     """, unsafe_allow_html=True)
 
+    # Defaults
+    default_center = [-20.32, 30.06]
+
     # MAIN LAYOUT: Map (Left 4) | Data Panel (Right 1) - Increased ratio for more map
     col_map, col_right = st.columns([5, 1.5], gap="small")
     
