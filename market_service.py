@@ -52,24 +52,50 @@ class MarketIntelligenceService:
         return pd.DataFrame(data)
 
     def get_news(self):
-        """Returns simulated news headlines."""
-        # Static list of realistic headlines
-        headlines = [
-            {"title": "Zvishavane Production hits record high for Q4", "source": "Mining Weekly"},
-            {"title": "Lithium demand surges as EV market expands", "source": "Market Watch"},
-            {"title": "New environmental regulations for Chrome mining", "source": "EMA Update"},
-            {"title": "Global Gold prices stabilize amid inflation concerns", "source": "Bloomberg"},
-            {"title": "Mimosa Mine announces community development fund", "source": "Local News"},
-            {"title": "Small-scale miners to receive government grants", "source": "Govt Gazette"}
-        ]
+        """Fetches REAL LIVE news using standard libraries (Crash-Proof)."""
+        import urllib.request
+        import xml.etree.ElementTree as ET
         
+        url = "https://news.google.com/rss/search?q=Zimbabwe+Mining+Minerals&hl=en-US&gl=US&ceid=US:en"
         articles = []
-        random.shuffle(headlines)
-        for h in headlines[:4]:
-            articles.append({
-                "title": h['title'],
-                "link": "#",
-                "source": h['source'],
-                "date": datetime.datetime.now().strftime("%d %b %Y")
-            })
+        
+        try:
+            # 5-second timeout to prevent hanging
+            with urllib.request.urlopen(url, timeout=5) as response:
+                xml_data = response.read()
+                root = ET.fromstring(xml_data)
+                
+                # Iterate over channel items
+                count = 0
+                for item in root.findall('./channel/item'):
+                    if count >= 6: break
+                    
+                    title = item.find('title').text
+                    link = item.find('link').text
+                    pubDate = item.find('pubDate').text
+                    source = item.find('source').text if item.find('source') is not None else "Google News"
+                    
+                    # Simple date cleanup
+                    # pubDate is usually "Tue, 17 Dec 2025 10:00:00 GMT"
+                    try:
+                        dt = pubDate[:16] # "Tue, 17 Dec 2025"
+                    except:
+                        dt = "Recenly"
+
+                    articles.append({
+                        "title": title,
+                        "link": link,
+                        "source": source,
+                        "date": dt
+                    })
+                    count += 1
+                    
+        except Exception as e:
+            print(f"News Fetch Error: {e}")
+            # Fallback if internet is down
+            return [
+                {"title": "Check Internet Connection for Live News", "link": "#", "source": "System", "date": "Now"},
+                {"title": "Zvishavane Production stable (Offline Mode)", "link": "#", "source": "Local Archive", "date": "Today"},
+            ]
+            
         return articles
