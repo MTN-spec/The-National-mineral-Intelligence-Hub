@@ -100,7 +100,18 @@ import importlib
 import mock_services
 importlib.reload(mock_services)
 from mock_services import AkelloService, EcoCashService, GigEngine, MentorService, FieldDataService
-from market_service import MarketIntelligenceService
+
+try:
+    from market_service import MarketIntelligenceService
+except ImportError as e:
+    # Fallback if dependencies are missing or error occurs
+    print(f"Market Service Import Error: {e}")
+    class MarketIntelligenceService:
+        def get_prices(self):
+            import pandas as pd
+            return pd.DataFrame([{"Mineral": "System Error", "Price": 0, "Change": 0, "Trend": []}])
+        def get_news(self):
+             return [{"title": "Market Data Unavailable", "link": "#", "source": "System", "date": "Now"}]
 
 # Session State Initialization
 # Check Subscription Status (placeholder function import)
