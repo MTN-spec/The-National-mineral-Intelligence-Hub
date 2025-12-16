@@ -16,6 +16,7 @@ from streamlit_folium import st_folium
 import matplotlib.cm as cm
 import matplotlib.colors as colors
 import datetime
+import os
 
 # Page Config
 st.set_page_config(
@@ -99,6 +100,7 @@ import importlib
 import mock_services
 importlib.reload(mock_services)
 from mock_services import AkelloService, EcoCashService, GigEngine, MentorService, FieldDataService
+from market_service import MarketIntelligenceService
 
 # Session State Initialization
 # Check Subscription Status (placeholder function import)
@@ -112,6 +114,7 @@ if 'init' not in st.session_state:
     st.session_state.gig_engine_board_v3 = GigEngine()
     st.session_state.mentor_service_v2 = MentorService()
     st.session_state.field_service = FieldDataService()
+    st.session_state.market_service = MarketIntelligenceService()
     # Do NOT reset user/auth here if they might already exist, though 'init' check prevents double run.
     # But just in case, we initialize them only if missing.
     if 'user' not in st.session_state:
@@ -223,28 +226,12 @@ page = st.sidebar.radio(
 # ==========================================
 if page == "🏠 Home":
     st.markdown("<h1 style='text-align: center; color: #00FF7F; text-shadow: 2px 2px 4px #000000;'>The National Mineral Intelligence Hub 🇿🇼</h1>", unsafe_allow_html=True)
-    st.markdown("""
-    <h3 style='text-align: center; color: #00FF7F;'>Empowering the Next Generation of Digital Miners.</h3>
-    <p style='text-align: center; font-size: 1.1em;'>This platform integrates specific indices for mineral detection with a skills-to-earning framework.</p>
-    """, unsafe_allow_html=True)
     
-    # Content Image (Centered & Sizable)
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c2:
-        st.image("content_image.png", use_container_width=True)
-        # Vivid Green for the caption
-        st.markdown("<h3 style='text-align: center; color: #00FF7F; text-shadow: 2px 2px 4px #000000;'>Leadership in Mineral Development</h3>", unsafe_allow_html=True)
-
     # Function to set background
     import base64
     def set_bg_hack(main_bg):
-        '''
-        A function to unpack an image from root folder and set as bg.
-        The bg will be static and cover the full screen.
-        '''
-        # set bg name
+        # ... (keep existing background logic) ...
         main_bg_ext = "jpg"
-            
         st.markdown(
             f"""
             <style>
@@ -253,35 +240,22 @@ if page == "🏠 Home":
                 background-size: cover;
                 background-attachment: fixed;
             }}
-            /* Center all text on the main page */
+             /* Global Text Color Fix for Dark Overlay */
             .main .block-container {{
-                text-align: center;
-                background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent dark overlay for readability */
+                background-color: rgba(10, 10, 20, 0.85); 
                 border-radius: 15px;
-                padding: 20px;
-                margin-top: 50px;
+                padding: 30px;
+                margin-top: 20px;
             }}
-            
-            /* GLOBAL TEXT COLORING - VIVID GREEN THEME */
-            h1, h2, h3, h4, h5, h6 {{
-                color: #00FF7F !important; /* SpringGreen */
-                text-shadow: 1px 1px 2px black;
-            }}
-            
-            p, li, label, .stMarkdown, .stText {{
-                color: #E0FFFF !important; /* LightCyan for readability */
-                font-weight: 500;
-            }}
-            
-            /* Sidebar Text */
-            [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {{
-                color: #00FF7F !important;
-            }}
-            
-            /* Specific fix for lists to look decent centered */
-            ul {{
-                display: inline-block;
-                text-align: left;
+            h1, h2, h3, h4 {{ color: #00FF7F !important; text-shadow: 1px 1px 2px black; }}
+            p, label, .stMarkdown {{ color: #E0FFFF !important; }}
+            .metric-card {{
+                background-color: #222;
+                border: 1px solid #444;
+                padding: 15px;
+                border-radius: 8px;
+                text-align: center;
+                margin-bottom: 10px;
             }}
             </style>
             """,
@@ -289,10 +263,64 @@ if page == "🏠 Home":
         )
 
     try:
-        set_bg_hack('mining_background_final.jpg')
-    except Exception as e:
-        st.warning(f"Could not load background image: {e}")
-        st.image("mining_background.jpg")
+        if os.path.exists('mining_background_final.jpg'):
+            set_bg_hack('mining_background_final.jpg')
+        else:
+             st.info("Background image not found, skipping.")
+    except Exception:
+        pass
+
+    # --- LIVE DASHBOARD CONTENT ---
+    
+    st.markdown("### 📊 Live Mineral Markets (Zimbabwe & Global)")
+    
+    # 1. MARKET DATA
+    if 'market_service' not in st.session_state:
+        st.session_state.market_service = MarketIntelligenceService()
+        
+    with st.spinner("Fetching Live Market Data..."):
+        df_prices = st.session_state.market_service.get_prices()
+    
+    # Display Ticker Tape (Top 5 visible, others in expander or scroll)
+    # create 5 columns
+    cols = st.columns(5)
+    for index, row in df_prices.head(5).iterrows():
+        with cols[index]:
+            delta_color = "normal" if row['Change'] > 0 else "inverse"
+            st.metric(label=row['Mineral'], value=f"${row['Price']:,.2f}", delta=f"{row['Change']:.2f}%")
+            
+    with st.expander("View All Mineral Prices"):
+         st.dataframe(df_prices.style.format({"Price": "${:,.2f}", "Change": "{:.2f}%"}))
+
+    st.divider()
+
+    # 2. SPLIT VIEW: CHARTS & NEWS
+    c_chart, c_news = st.columns([2, 1])
+    
+    with c_chart:
+        st.subheader("📈 Price Trends")
+        selected_mineral = st.selectbox("Select Mineral to Analyze", df_prices['Mineral'].unique())
+        
+        # Get trend data for selected
+        mineral_data = df_prices[df_prices['Mineral'] == selected_mineral].iloc[0]
+        trend_prices = mineral_data['Trend']
+        
+        # Simple Line Chart
+        chart_data = pd.DataFrame({
+            "Day": ["T-4", "T-3", "T-2", "T-1", "Now"],
+            "Price": trend_prices
+        })
+        st.line_chart(chart_data.set_index("Day"))
+        st.caption(f"5-Day Trend for {selected_mineral}")
+
+    with c_news:
+        st.subheader("📰 Live Mining News")
+        news_items = st.session_state.market_service.get_news()
+        
+        for item in news_items:
+            with st.container(border=True):
+                st.markdown(f"**[{item['title']}]({item['link']})**")
+                st.caption(f"{item['source']} • {item['date']}")
 
 # (Section Moved to Job Board)
 
@@ -305,28 +333,48 @@ if page == "🏠 Home":
 elif page == "🛰️ Remote Sensing Satellite Imagery Data":
     
     # --- GEE IMPORT & INITIALIZATION ---
+    # --- GEE IMPORT & INITIALIZATION ---
+    # Trigger Reload for Auth Update
     import ee
     import geemap.foliumap as geemap
+    import json
+    from google.oauth2 import service_account
     
     def initialize_gee():
-        """Initializes Earth Engine safely."""
+        """Initializes Earth Engine safely with robust credential handling."""
+        # 1. Try standard initialization (Local Auth)
         try:
             ee.Initialize()
             return True
-        except Exception as e:
-            # Try using service account from secrets if available
-            if "gcp_service_account" in st.secrets:
-                try:
-                    service_account = st.secrets["gcp_service_account"]
-                    credentials = ee.ServiceAccountCredentials(service_account["client_email"], key_data=service_account["private_key"])
-                    ee.Initialize(credentials)
-                    return True
-                except Exception as e2:
-                    st.error(f"GEE Auth Failed: {e2}")
-                    return False
-            else:
-                st.warning("GEE Not Authenticated. Access restricted. Please set credentials in secrets.toml.")
+        except Exception:
+            pass # Fall through to Secrets Auth
+
+        # 2. Try Secrets Auth
+        if "gcp_service_account" in st.secrets:
+            try:
+                # Convert Secrets object to standard dict
+                service_account_info = dict(st.secrets["gcp_service_account"])
+                
+                # Fix Private Key formatting (common streamlist secrets issue)
+                # If key has literal "\n" strings but needs real newlines
+                if "\\n" in service_account_info["private_key"]:
+                    service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
+                
+                # Create Credentials using google-auth (Modern Way)
+                creds = service_account.Credentials.from_service_account_info(service_account_info)
+                ee.Initialize(credentials=creds)
+                return True
+            except Exception as e:
+                st.error(f"GEE Auth Failed with Secrets: {e}")
+                # Debug Info
+                st.write(f"Key ID present: {service_account_info.get('private_key_id', 'N/A')}")
                 return False
+        else:
+            # 3. Debugging: Show what keys ARE found
+            st.warning("GEE Not Authenticated. Access restricted.")
+            st.info(f"Detected Secret Sections: {list(st.secrets.keys())}")
+            st.markdown("Please ensure `[gcp_service_account]` exists in `.streamlit/secrets.toml`.")
+            return False
 
     gee_ready = initialize_gee()
     
@@ -340,7 +388,7 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
         max-width: 100%;
         overflow: hidden; /* Prevent body scroll */
     }
-    header, footer {display: none !important;}
+    footer {display: none !important;}
     
     /* 2. Map Container Adjustment */
     iframe {
@@ -603,8 +651,12 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                  lat = c1.number_input("Lat", value=-20.30)
                  lon = c2.number_input("Lon", value=30.00)
                  desc = st.text_input("Observation")
+                 
+                 # Camera Input (Restored)
+                 img_buffer = st.camera_input("Take a Photo")
+                 
                  if st.form_submit_button("Submit Point"):
-                     st.session_state.field_service.add_submission(lat, lon, desc, None, user_name)
+                     st.session_state.field_service.add_submission(lat, lon, desc, img_buffer, user_name)
                      st.rerun()
 
 # ==========================================
