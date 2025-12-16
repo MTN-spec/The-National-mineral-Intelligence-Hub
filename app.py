@@ -101,17 +101,17 @@ import mock_services
 importlib.reload(mock_services)
 from mock_services import AkelloService, EcoCashService, GigEngine, MentorService, FieldDataService
 
-try:
-    from market_service import MarketIntelligenceService
-except ImportError as e:
-    # Fallback if dependencies are missing or error occurs
-    print(f"Market Service Import Error: {e}")
-    class MarketIntelligenceService:
-        def get_prices(self):
-            import pandas as pd
-            return pd.DataFrame([{"Mineral": "System Error", "Price": 0, "Change": 0, "Trend": []}])
-        def get_news(self):
-             return [{"title": "Market Data Unavailable", "link": "#", "source": "System", "date": "Now"}]
+# try:
+#     from market_service import MarketIntelligenceService
+# except ImportError as e:
+#     # Fallback if dependencies are missing or error occurs
+#     print(f"Market Service Import Error: {e}")
+#     class MarketIntelligenceService:
+#         def get_prices(self):
+#             import pandas as pd
+#             return pd.DataFrame([{"Mineral": "System Error", "Price": 0, "Change": 0, "Trend": []}])
+#         def get_news(self):
+#              return [{"title": "Market Data Unavailable", "link": "#", "source": "System", "date": "Now"}]
 
 # Session State Initialization
 # Check Subscription Status (placeholder function import)
@@ -125,7 +125,7 @@ if 'init' not in st.session_state:
     st.session_state.gig_engine_board_v3 = GigEngine()
     st.session_state.mentor_service_v2 = MentorService()
     st.session_state.field_service = FieldDataService()
-    st.session_state.market_service = MarketIntelligenceService()
+    # st.session_state.market_service = MarketIntelligenceService()
     # Do NOT reset user/auth here if they might already exist, though 'init' check prevents double run.
     # But just in case, we initialize them only if missing.
     if 'user' not in st.session_state:
@@ -286,22 +286,22 @@ if page == "🏠 Home":
     st.markdown("### 📊 Live Mineral Markets (Zimbabwe & Global)")
     
     # 1. MARKET DATA
-    if 'market_service' not in st.session_state:
-        st.session_state.market_service = MarketIntelligenceService()
+    # if 'market_service' not in st.session_state:
+    #     st.session_state.market_service = MarketIntelligenceService()
         
-    with st.spinner("Fetching Live Market Data..."):
-        df_prices = st.session_state.market_service.get_prices()
-    
+    # with st.spinner("Fetching Live Market Data..."):
+    #     df_prices = st.session_state.market_service.get_prices()
+    st.info("Market Data Service is currently under maintenance. Please check back later.")
     # Display Ticker Tape (Top 5 visible, others in expander or scroll)
     # create 5 columns
-    cols = st.columns(5)
-    for index, row in df_prices.head(5).iterrows():
-        with cols[index]:
-            delta_color = "normal" if row['Change'] > 0 else "inverse"
-            st.metric(label=row['Mineral'], value=f"${row['Price']:,.2f}", delta=f"{row['Change']:.2f}%")
+    # cols = st.columns(5)
+    # for index, row in df_prices.head(5).iterrows():
+    #     with cols[index]:
+    #         delta_color = "normal" if row['Change'] > 0 else "inverse"
+    #         st.metric(label=row['Mineral'], value=f"${row['Price']:,.2f}", delta=f"{row['Change']:.2f}%")
             
-    with st.expander("View All Mineral Prices"):
-         st.dataframe(df_prices.style.format({"Price": "${:,.2f}", "Change": "{:.2f}%"}))
+    # with st.expander("View All Mineral Prices"):
+    #      st.dataframe(df_prices.style.format({"Price": "${:,.2f}", "Change": "{:.2f}%"}))
 
     st.divider()
 
@@ -310,28 +310,30 @@ if page == "🏠 Home":
     
     with c_chart:
         st.subheader("📈 Price Trends")
-        selected_mineral = st.selectbox("Select Mineral to Analyze", df_prices['Mineral'].unique())
+        # selected_mineral = st.selectbox("Select Mineral to Analyze", df_prices['Mineral'].unique())
         
-        # Get trend data for selected
-        mineral_data = df_prices[df_prices['Mineral'] == selected_mineral].iloc[0]
-        trend_prices = mineral_data['Trend']
+        # # Get trend data for selected
+        # mineral_data = df_prices[df_prices['Mineral'] == selected_mineral].iloc[0]
+        # trend_prices = mineral_data['Trend']
         
-        # Simple Line Chart
-        chart_data = pd.DataFrame({
-            "Day": ["T-4", "T-3", "T-2", "T-1", "Now"],
-            "Price": trend_prices
-        })
-        st.line_chart(chart_data.set_index("Day"))
-        st.caption(f"5-Day Trend for {selected_mineral}")
+        # # Simple Line Chart
+        # chart_data = pd.DataFrame({
+        #     "Day": ["T-4", "T-3", "T-2", "T-1", "Now"],
+        #     "Price": trend_prices
+        # })
+        # st.line_chart(chart_data.set_index("Day"))
+        # st.caption(f"5-Day Trend for {selected_mineral}")
+        st.info("Charts unavailable")
 
     with c_news:
         st.subheader("📰 Live Mining News")
-        news_items = st.session_state.market_service.get_news()
+        # news_items = st.session_state.market_service.get_news()
         
-        for item in news_items:
-            with st.container(border=True):
-                st.markdown(f"**[{item['title']}]({item['link']})**")
-                st.caption(f"{item['source']} • {item['date']}")
+        # for item in news_items:
+        #     with st.container(border=True):
+        #         st.markdown(f"**[{item['title']}]({item['link']})**")
+        #         st.caption(f"{item['source']} • {item['date']}")
+        st.info("News Feed unavailable")
 
 # (Section Moved to Job Board)
 
