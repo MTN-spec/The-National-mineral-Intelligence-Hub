@@ -11,6 +11,5 @@ qrcode
 streamlit-js-eval
 earthengine-api
 geemap
-yfinance
-feedparser
+
 
