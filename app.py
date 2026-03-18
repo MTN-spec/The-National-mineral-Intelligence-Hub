@@ -343,10 +343,7 @@ if page == "🏠 Home":
 elif page == "🛰️ Remote Sensing Satellite Imagery Data":
     
     # --- GEE IMPORT & INITIALIZATION ---
-    # --- GEE IMPORT & INITIALIZATION ---
-    # Trigger Reload for Auth Update
     import ee
-    import geemap.foliumap as geemap
     import json
     from google.oauth2 import service_account
     
@@ -365,8 +362,7 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 # Convert Secrets object to standard dict
                 service_account_info = dict(st.secrets["gcp_service_account"])
                 
-                # Fix Private Key formatting (common streamlist secrets issue)
-                # If key has literal "\n" strings but needs real newlines
+                # Fix Private Key formatting (common streamlit secrets issue)
                 if "\\n" in service_account_info["private_key"]:
                     service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
                 
@@ -376,17 +372,30 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 return True
             except Exception as e:
                 st.error(f"GEE Auth Failed with Secrets: {e}")
-                # Debug Info
                 st.write(f"Key ID present: {service_account_info.get('private_key_id', 'N/A')}")
                 return False
         else:
-            # 3. Debugging: Show what keys ARE found
             st.warning("GEE Not Authenticated. Access restricted.")
             st.info(f"Detected Secret Sections: {list(st.secrets.keys())}")
             st.markdown("Please ensure `[gcp_service_account]` exists in `.streamlit/secrets.toml`.")
             return False
 
     gee_ready = initialize_gee()
+    
+    def add_ee_layer_to_folium(folium_map, ee_image, vis_params, name):
+        """Add a Google Earth Engine image layer to a folium map using getMapId."""
+        try:
+            map_id_dict = ee.Image(ee_image).getMapId(vis_params)
+            folium.TileLayer(
+                tiles=map_id_dict['tile_fetcher'].url_format,
+                attr='Google Earth Engine',
+                name=name,
+                overlay=True,
+                control=True,
+                opacity=0.9
+            ).add_to(folium_map)
+        except Exception as e:
+            st.warning(f"Could not add GEE layer '{name}': {e}")
     
     # Custom CSS for Fixed 100vh Layout
     st.markdown("""
@@ -422,11 +431,22 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
     # Defaults
     default_center = [-20.32, 30.06]
 
-    # MAIN LAYOUT: Map (Left 4) | Data Panel (Right 1) - Increased ratio for more map
+    # MAIN LAYOUT: Map (Left 5) | Data Panel (Right 1.5)
     col_map, col_right = st.columns([5, 1.5], gap="small")
     
     # --- RIGHT PANEL (COMPACT TABS) ---
     with col_right:
+        # Base Map Selector (Above tabs for better accessibility)
+        st.caption("🗺️ Base Map")
+        base_map_choice = st.selectbox(
+            "Choose Layer",
+            ["🛰️ Satellite (Esri)", "🗺️ OpenStreetMap", "🌍 CartoDB Positron", "🌑 CartoDB Dark"],
+            index=0,
+            help="Select base map - changes apply immediately",
+            key="base_map_selector"
+        )
+        st.divider()
+        
         # Use Tabs to save vertical space
         tab_layers, tab_tools, tab_info = st.tabs(["Layers", "Tools", "Info"])
         
@@ -436,7 +456,6 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
             with st.expander("📍 Search", expanded=False):
                  st.text_input("Place", placeholder="Search...")
             
-            # 1. Search (Placeholder for now, standard Mapbox/OSM search is better integrated in mapping tools usually)
             with st.expander("📍 Search Location"):
                  loc_search = st.text_input("Place Name")
             
@@ -444,9 +463,7 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 st.error("⚠️ Earth Engine not connected. Real data unavailable.")
                 scenes = []
             else:
-                # 2. REAL GEE DATA QUERY
-                # Get map center (mocked logic for now as we can't easily get live bounds bi-directionally without callbacks)
-                # Ideally, we query based on a fixed Point or the last known location
+                # REAL GEE DATA QUERY
                 roi = ee.Geometry.Point([default_center[1], default_center[0]])
                 
                 # Filter Sentinel-2
@@ -480,12 +497,11 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 st.info("No recent cloud-free images found.")
             
             # Scene Selector
-            # Ensure sel_id is initialized if scenes is empty
             sel_id = None
             if scenes:
                 sel_id = st.radio("Select Scene", [s["id"] for s in scenes], label_visibility="collapsed", format_func=lambda x: "")
             else:
-                st.radio("Select Scene", [], label_visibility="collapsed") # Render empty radio if no scenes
+                st.radio("Select Scene", [], label_visibility="collapsed")
             
             selected_scene_meta = next((s for s in scenes if s['id'] == sel_id), None)
 
@@ -499,6 +515,7 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 </div>
                 """, unsafe_allow_html=True)
             
+            st.divider()
             st.caption("Overlay Layers")
             show_gt = st.checkbox("Ground Truth Points", value=True)
 
@@ -562,97 +579,144 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 st.info("No analysis run yet.")
 
 
-    # --- LEFT PANEL (GEEMAP) ---
+    # --- LEFT PANEL (FOLIUM MAP with GEE Tile Layers) ---
     with col_map:
-        # Create Map
-        m = geemap.Map(location=default_center, zoom_start=12)
+        # Determine which base layer to use
+        if "Satellite" in base_map_choice:
+            m = folium.Map(
+                location=default_center, 
+                zoom_start=12,
+                tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                attr='Esri World Imagery'
+            )
+        elif "OpenStreetMap" in base_map_choice:
+            m = folium.Map(location=default_center, zoom_start=12, tiles='OpenStreetMap')
+        elif "Positron" in base_map_choice:
+            m = folium.Map(location=default_center, zoom_start=12, tiles='CartoDB positron')
+        else:  # Dark
+            m = folium.Map(location=default_center, zoom_start=12, tiles='CartoDB dark_matter')
         
-        # 1. Base Layer (Satellite)
-        m.add_basemap("HYBRID")
-
-        # 2. Add Selected Scene (Visual)
+        # Add alternative base layers for easy switching
+        folium.TileLayer(
+            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri World Imagery',
+            name='🛰️ Satellite',
+            overlay=False,
+            control=True
+        ).add_to(m)
+        
+        folium.TileLayer(
+            tiles='OpenStreetMap',
+            name='🗺️ OpenStreetMap',
+            overlay=False,
+            control=True
+        ).add_to(m)
+        
+        folium.TileLayer(
+            tiles='CartoDB positron',
+            name='🌍 Positron (Light)',
+            overlay=False,
+            control=True
+        ).add_to(m)
+        
+        folium.TileLayer(
+            tiles='CartoDB dark_matter',
+            name='🌑 Dark Matter',
+            overlay=False,
+            control=True
+        ).add_to(m)
+        
+        # Add Roads/Labels overlay for satellite view
+        folium.TileLayer(
+            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri Transportation',
+            name='🛣️ Roads & Labels',
+            overlay=True,
+            control=True,
+            opacity=0.8
+        ).add_to(m)
+        
+        # Add GEE Earth Engine layer if scene is selected
         if gee_ready and selected_scene_meta:
-             # Load the image
-             img = ee.Image(selected_scene_meta['id'])
-             
-             # PROCESSING LOGIC
-             active_analysis = st.session_state.get("current_analysis", {})
-             method = active_analysis.get("method", "True Color")
-             
-             final_layer = img # Default
-             v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000} # Default RGB
-             
-             if method == "True Color":
-                 final_layer = img
-                 v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
-                 
-             elif method == "NDVI":
-                 final_layer = img.normalizedDifference(['B8', 'B4']).rename('NDVI')
-                 v_params = {"min": -0.2, "max": 0.8, "palette": ['red', 'yellow', 'green']}
-                 
-             elif method == "Iron Oxide":
-                 # Red/Blue (B4 / B2) approx
-                 final_layer = img.expression("b('B4') / b('B2')").rename('Iron_Oxide')
-                 v_params = {"min": 1, "max": 3, "palette": ['blue', 'yellow', 'red']}
-                 
-             elif method == "Ferrous Iron":
-                 # SWIR1 / NIR (B11 / B8) approx
-                 final_layer = img.expression("b('B11') / b('B8')").rename('Ferrous_Iron')
-                 v_params = {"min": 0.5, "max": 2, "palette": ['blue', 'cyan', 'yellow', 'red']}
+            img = ee.Image(selected_scene_meta['id'])
+            
+            # PROCESSING LOGIC
+            active_analysis = st.session_state.get("current_analysis", {})
+            method = active_analysis.get("method", "True Color")
+            
+            final_layer = img  # Default
+            v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}  # Default RGB
+            
+            if method == "True Color":
+                final_layer = img
+                v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
+                
+            elif method == "NDVI":
+                final_layer = img.normalizedDifference(['B8', 'B4']).rename('NDVI')
+                v_params = {"min": -0.2, "max": 0.8, "palette": ['red', 'yellow', 'green']}
+                
+            elif method == "Iron Oxide":
+                final_layer = img.expression("b('B4') / b('B2')").rename('Iron_Oxide')
+                v_params = {"min": 1, "max": 3, "palette": ['blue', 'yellow', 'red']}
+                
+            elif method == "Ferrous Iron":
+                final_layer = img.expression("b('B11') / b('B8')").rename('Ferrous_Iron')
+                v_params = {"min": 0.5, "max": 2, "palette": ['blue', 'cyan', 'yellow', 'red']}
 
-             elif method == "Clay Minerals":
-                 # SWIR1 / SWIR2 (B11 / B12) approx
-                 final_layer = img.expression("b('B11') / b('B12')").rename('Clay_Minerals')
-                 v_params = {"min": 1, "max": 3, "palette": ['gray', 'yellow', 'orange']}
-                 
-             elif method == "Gossan Zone":
-                 # Example: Combination of Iron Oxide and Clay Minerals
-                 iron_oxide = img.expression("b('B4') / b('B2')")
-                 clay_minerals = img.expression("b('B11') / b('B12')")
-                 final_layer = iron_oxide.add(clay_minerals).rename('Gossan_Index')
-                 v_params = {"min": 2, "max": 6, "palette": ['blue', 'green', 'yellow', 'red']}
+            elif method == "Clay Minerals":
+                final_layer = img.expression("b('B11') / b('B12')").rename('Clay_Minerals')
+                v_params = {"min": 1, "max": 3, "palette": ['gray', 'yellow', 'orange']}
+                
+            elif method == "Gossan Zone":
+                iron_oxide = img.expression("b('B4') / b('B2')")
+                clay_minerals = img.expression("b('B11') / b('B12')")
+                final_layer = iron_oxide.add(clay_minerals).rename('Gossan_Index')
+                v_params = {"min": 2, "max": 6, "palette": ['blue', 'green', 'yellow', 'red']}
 
-             elif method == "SAVI":
-                 # SAVI = ((NIR - RED) / (NIR + RED + L)) * (1 + L) where L=0.5
-                 L = ee.Number(0.5)
-                 final_layer = img.expression(
-                     '((NIR - RED) / (NIR + RED + L)) * (1 + L)', {
-                         'NIR': img.select('B8'),
-                         'RED': img.select('B4'),
-                         'L': L
-                     }).rename('SAVI')
-                 v_params = {"min": -0.2, "max": 0.8, "palette": ['brown', 'yellow', 'green']}
+            elif method == "SAVI":
+                L = ee.Number(0.5)
+                final_layer = img.expression(
+                    '((NIR - RED) / (NIR + RED + L)) * (1 + L)', {
+                        'NIR': img.select('B8'),
+                        'RED': img.select('B4'),
+                        'L': L
+                    }).rename('SAVI')
+                v_params = {"min": -0.2, "max": 0.8, "palette": ['brown', 'yellow', 'green']}
 
-             elif method == "Moisture Index":
-                 # NDMI = (NIR - SWIR1) / (NIR + SWIR1)
-                 final_layer = img.normalizedDifference(['B8', 'B11']).rename('NDMI')
-                 v_params = {"min": -1, "max": 1, "palette": ['brown', 'white', 'blue']}
-                 
-             elif "AI" in method:
-                 # Example: Load a public classification dataset
-                 # Note: This will load the *latest* WorldCover image, not necessarily tied to the selected S2 scene date/location
-                 try:
-                     final_layer = ee.ImageCollection("ESA/WorldCover/v100").filterBounds(roi).first()
-                     v_params = {"bands": ["Map"]}
-                     method = "ESA WorldCover" # Update layer name for clarity
-                 except Exception as e:
-                     st.warning(f"Could not load AI model data: {e}")
-                     final_layer = img # Fallback to original image
-                     v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
-                     method = "True Color (Fallback)"
-             
-             # Add to Map
-             m.addLayer(final_layer, v_params, method)
-             m.centerObject(img, 12)
-
-        # 3. Field Markers
+            elif method == "Moisture Index":
+                final_layer = img.normalizedDifference(['B8', 'B11']).rename('NDMI')
+                v_params = {"min": -1, "max": 1, "palette": ['brown', 'white', 'blue']}
+                
+            elif "AI" in method:
+                try:
+                    roi = ee.Geometry.Point([default_center[1], default_center[0]])
+                    final_layer = ee.ImageCollection("ESA/WorldCover/v100").filterBounds(roi).first()
+                    v_params = {"bands": ["Map"]}
+                    method = "ESA WorldCover"
+                except Exception as e:
+                    st.warning(f"Could not load AI model data: {e}")
+                    final_layer = img
+                    v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
+                    method = "True Color (Fallback)"
+            
+            # Add the GEE layer to folium map using getMapId
+            add_ee_layer_to_folium(m, final_layer, v_params, method)
+        
+        # Add field markers if available
         if 'field_service' in st.session_state and show_gt:
-            # We can use folium logic on the geemap object
-             for sub in st.session_state.field_service.submissions:
-                 folium.Marker([sub['lat'], sub['lon']], popup=sub['desc'], icon=folium.Icon(color="green")).add_to(m)
+            for sub in st.session_state.field_service.submissions:
+                folium.Marker(
+                    [sub['lat'], sub['lon']], 
+                    popup=sub['desc'], 
+                    icon=folium.Icon(color="green", icon="info-sign")
+                ).add_to(m)
+        
+        # Add Layer Control to the map
+        folium.LayerControl(position='topright', collapsed=False).add_to(m)
+        
+        # Render folium map
+        st_folium(m, height=850, width=None)
 
-        # RENDER MAP
-        m.to_streamlit(height=850)
 
         # --- FLOATING ACTION BUTTON ---
         with st.expander("📝 Log Field Observation", expanded=False):

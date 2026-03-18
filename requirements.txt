@@ -10,5 +10,4 @@ shapely
 qrcode
 streamlit-js-eval
 earthengine-api
-geemap
-python-box<7.3.0
+google-auth
