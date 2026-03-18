@@ -363,9 +363,15 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 if "\\n" in service_account_info["private_key"]:
                     service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
                 
-                # Create Credentials using google-auth (Modern Way)
-                creds = service_account.Credentials.from_service_account_info(service_account_info)
-                ee.Initialize(credentials=creds)
+                # Create Credentials using google-auth with Earth Engine scopes
+                scopes = [
+                    'https://www.googleapis.com/auth/earthengine',
+                    'https://www.googleapis.com/auth/cloud-platform'
+                ]
+                creds = service_account.Credentials.from_service_account_info(
+                    service_account_info, scopes=scopes
+                )
+                ee.Initialize(credentials=creds, project=service_account_info.get('project_id'))
                 return True
             except Exception as e:
                 st.error(f"GEE Auth Failed with Secrets: {e}")
