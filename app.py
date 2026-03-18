@@ -7,11 +7,8 @@ from mock_services import AkelloService, EcoCashService, GigEngine
 from api_gateway import EcoCashGateway, SmsService, EmailService, APILogger
 from auth_service import AuthService
 import pandas as pd
-import geopandas as gpd
-from shapely.geometry import Point
 from streamlit_js_eval import get_geolocation
 import folium
-from folium.plugins import Draw
 from streamlit_folium import st_folium
 import matplotlib.cm as cm
 import matplotlib.colors as colors

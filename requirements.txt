@@ -1,12 +1,9 @@
 numpy
 matplotlib
 streamlit
-rasterio
 pandas
 folium
 streamlit-folium
-geopandas
-shapely
 qrcode
 streamlit-js-eval
 earthengine-api
