@@ -847,8 +847,11 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                  lon = c2.number_input("Lon", value=30.00)
                  desc = st.text_input("Observation")
                  
-                 # Camera Input (Restored)
-                 img_buffer = st.camera_input("Take a Photo")
+                 # Camera Input — only activates when user toggles it on
+                 use_camera = st.checkbox("📷 Enable Camera", value=False, key="cam_field")
+                 img_buffer = None
+                 if use_camera:
+                     img_buffer = st.camera_input("Take a Photo")
                  
                  if st.form_submit_button("Submit Point"):
                      st.session_state.field_service.add_submission(lat, lon, desc, img_buffer, user_name)
@@ -1124,8 +1127,11 @@ elif page == "💳 EcoCash Wallet":
             with st.expander("Show Test Merchant QR"):
                 st.image("supermarket_qr.png", caption="Scan this code (TM Pick n Pay - $20)")
             
-            # Camera Input
-            qr_image = st.camera_input("Point camera at QR Code")
+            # Camera Input — only activates when user toggles it on
+            use_qr_camera = st.checkbox("📷 Enable Camera to Scan", value=False, key="cam_qr")
+            qr_image = None
+            if use_qr_camera:
+                qr_image = st.camera_input("Point camera at QR Code")
             
             if qr_image is not None:
                 # In a real app, we would decode the QR here using cv2 or pyzbar
