@@ -641,7 +641,113 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
             opacity=0.8
         ).add_to(m)
         
-        # Add GEE Earth Engine layer if scene is selected
+        # ========================================
+        # DRAWING TOOLS — Polygon, Rectangle, Circle, Marker
+        # ========================================
+        from folium.plugins import Draw
+        draw = Draw(
+            export=True,
+            position='topleft',
+            draw_options={
+                'polyline': {'allowIntersection': False, 'shapeOptions': {'color': '#00FF7F', 'weight': 3}},
+                'polygon': {'allowIntersection': False, 'showArea': True, 'shapeOptions': {'color': '#00FF7F', 'fillColor': '#00FF7F', 'fillOpacity': 0.15, 'weight': 2}},
+                'rectangle': {'showArea': True, 'shapeOptions': {'color': '#FFD700', 'fillColor': '#FFD700', 'fillOpacity': 0.15, 'weight': 2}},
+                'circle': {'shapeOptions': {'color': '#FF6347', 'fillColor': '#FF6347', 'fillOpacity': 0.1}},
+                'marker': True,
+                'circlemarker': False,
+            },
+            edit_options={'edit': True, 'remove': True}
+        )
+        draw.add_to(m)
+        
+        # ========================================
+        # MINERAL POTENTIAL OVERLAY ZONES (Demo Data - Zvishavane Region)
+        # These represent known geological features and mineral potential areas
+        # ========================================
+        
+        # Feature Group for mineral zones (toggleable in layer control)
+        mineral_zones = folium.FeatureGroup(name='🔴 Iron Oxide Anomalies', show=True)
+        clay_zones = folium.FeatureGroup(name='🟡 Clay Mineral Zones', show=True)
+        pgm_zones = folium.FeatureGroup(name='🟣 PGM Potential Areas', show=True)
+        mine_markers = folium.FeatureGroup(name='⛏️ Known Mine Sites', show=True)
+        
+        # --- IRON OXIDE ANOMALY ZONES ---
+        # Zvishavane region iron oxide deposits (Great Dyke area)
+        iron_oxide_areas = [
+            {"coords": [[-20.28, 29.98], [-20.28, 30.02], [-20.31, 30.02], [-20.31, 29.98]], "name": "Iron Oxide Zone A - Mashava"},
+            {"coords": [[-20.33, 30.04], [-20.33, 30.08], [-20.36, 30.08], [-20.36, 30.04]], "name": "Iron Oxide Zone B - Great Dyke South"},
+            {"coords": [[-20.25, 30.06], [-20.25, 30.10], [-20.28, 30.10], [-20.28, 30.06]], "name": "Iron Oxide Zone C - Shabanie"},
+        ]
+        for zone in iron_oxide_areas:
+            folium.Polygon(
+                locations=zone["coords"],
+                color='#FF4444',
+                fill=True,
+                fill_color='#FF4444',
+                fill_opacity=0.25,
+                weight=2,
+                popup=folium.Popup(f"<b>{zone['name']}</b><br>Index: B4/B2 Ratio<br>Confidence: High<br><i>Red/Blue band ratio indicates hematite/goethite presence</i>", max_width=250),
+                tooltip=zone['name']
+            ).add_to(iron_oxide_areas and mineral_zones)
+        
+        # --- CLAY MINERAL ZONES ---
+        clay_areas = [
+            {"coords": [[-20.30, 30.00], [-20.30, 30.04], [-20.33, 30.04], [-20.33, 30.00]], "name": "Kaolinite Zone - Central"},
+            {"coords": [[-20.35, 30.06], [-20.35, 30.10], [-20.38, 30.10], [-20.38, 30.06]], "name": "Montmorillonite Zone - South"},
+        ]
+        for zone in clay_areas:
+            folium.Polygon(
+                locations=zone["coords"],
+                color='#FFD700',
+                fill=True,
+                fill_color='#FFD700',
+                fill_opacity=0.2,
+                weight=2,
+                popup=folium.Popup(f"<b>{zone['name']}</b><br>Index: B11/B12 (SWIR) Ratio<br>Confidence: Medium<br><i>SWIR ratio indicates hydroxyl-bearing minerals</i>", max_width=250),
+                tooltip=zone['name']
+            ).add_to(clay_zones)
+        
+        # --- PGM (Platinum Group Metals) POTENTIAL ---
+        pgm_areas = [
+            {"coords": [[-20.29, 29.96], [-20.29, 30.00], [-20.34, 30.00], [-20.34, 29.96]], "name": "PGM Zone - Great Dyke Axis"},
+            {"coords": [[-20.22, 30.02], [-20.22, 30.06], [-20.26, 30.06], [-20.26, 30.02]], "name": "PGM Zone - Ngezi Extension"},
+        ]
+        for zone in pgm_areas:
+            folium.Polygon(
+                locations=zone["coords"],
+                color='#9B59B6',
+                fill=True,
+                fill_color='#9B59B6',
+                fill_opacity=0.2,
+                weight=2,
+                popup=folium.Popup(f"<b>{zone['name']}</b><br>Type: Layered Intrusion<br>Minerals: Pt, Pd, Rh, Cr<br><i>Associated with mafic-ultramafic complexes</i>", max_width=250),
+                tooltip=zone['name']
+            ).add_to(pgm_zones)
+        
+        # --- KNOWN MINE SITES ---
+        mines = [
+            {"lat": -20.32, "lon": 30.04, "name": "Mimosa Platinum Mine", "type": "PGM", "status": "Active", "icon_color": "purple"},
+            {"lat": -20.33, "lon": 29.99, "name": "Shabanie Mine", "type": "Asbestos (Historical)", "status": "Closed", "icon_color": "gray"},
+            {"lat": -20.29, "lon": 30.05, "name": "Mashava Mine", "type": "Chrysotile", "status": "Care & Maintenance", "icon_color": "orange"},
+            {"lat": -20.35, "lon": 30.07, "name": "Zvishavane ASM Operations", "type": "Gold (Artisanal)", "status": "Active", "icon_color": "red"},
+            {"lat": -20.27, "lon": 30.01, "name": "Great Dyke Chrome Prospect", "type": "Chromite", "status": "Exploration", "icon_color": "green"},
+        ]
+        for mine in mines:
+            folium.Marker(
+                [mine['lat'], mine['lon']],
+                popup=folium.Popup(f"<b>⛏️ {mine['name']}</b><br>Type: {mine['type']}<br>Status: <b>{mine['status']}</b>", max_width=200),
+                tooltip=mine['name'],
+                icon=folium.Icon(color=mine['icon_color'], icon='industry', prefix='fa')
+            ).add_to(mine_markers)
+        
+        mineral_zones.add_to(m)
+        clay_zones.add_to(m)
+        pgm_zones.add_to(m)
+        mine_markers.add_to(m)
+        
+        # ========================================
+        # GEE EARTH ENGINE LAYER (if available)
+        # ========================================
         if gee_ready and selected_scene_meta:
             img = ee.Image(selected_scene_meta['id'])
             
@@ -719,8 +825,17 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
         # Add Layer Control to the map
         folium.LayerControl(position='topright', collapsed=False).add_to(m)
         
-        # Render folium map
-        st_folium(m, height=850, width=None)
+        # Render folium map — capture drawn shapes
+        map_data = st_folium(m, height=850, width=None)
+        
+        # Show drawn polygon coordinates
+        if map_data and map_data.get("last_active_drawing"):
+            drawing = map_data["last_active_drawing"]
+            with st.expander("📐 Selected Study Area", expanded=True):
+                st.success("✅ Study area captured!")
+                geom = drawing.get("geometry", {})
+                st.json(geom)
+                st.caption("Use these coordinates to define your Region of Interest (ROI) for analysis.")
 
 
         # --- FLOATING ACTION BUTTON ---
