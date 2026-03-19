@@ -824,7 +824,7 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 ).add_to(m)
         
         # Add Layer Control to the map
-        folium.LayerControl(position='topright', collapsed=False).add_to(m)
+        folium.LayerControl(position='topright', collapsed=True).add_to(m)
         
         # Render folium map — capture drawn shapes
         map_data = st_folium(m, height=850, width=None)
