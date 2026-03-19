@@ -48,40 +48,197 @@ if 'user' not in st.session_state:
 # AUTHENTICATION FLOW
 # ==========================================
 if not st.session_state.authenticated:
-    # Cover Page Image
-    st.image("cover_page.png", use_container_width=True)
-    st.subheader("Login to access the platform")
-    
-    tab1, tab2 = st.tabs(["Login", "Sign Up"])
-    
-    with tab1:
-        email = st.text_input("Email", key="login_email")
-        password = st.text_input("Password", type="password", key="login_pass")
-        if st.button("Login"):
-            user, msg = st.session_state.auth_service.login_user(email, password)
-            if user:
-                st.session_state.authenticated = True
-                st.session_state.user = user
-                st.success(f"Welcome back, {user['name']}!")
-                st.rerun()
-            else:
-                st.error(msg)
-                
-    with tab2:
-        new_email = st.text_input("Email", key="signup_email")
-        new_password = st.text_input("Password", type="password", key="signup_pass")
-        new_name = st.text_input("Full Name", key="signup_name")
-        new_phone = st.text_input("Phone Number", key="signup_phone")
+    # --- ANIMATED FULL-SCREEN LOGIN PAGE ---
+    st.markdown("""
+    <style>
+        /* Hide default Streamlit header/footer for clean login */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
         
-        if st.button("Sign Up"):
-            if new_email and new_password and new_name:
-                success, msg = st.session_state.auth_service.register_user(new_email, new_password, new_name, new_phone)
-                if success:
-                    st.success("Account created! Please login.")
+        /* Full-screen dark animated background */
+        .stApp {
+            background: linear-gradient(-45deg, #0a0a1a, #0d1b2a, #1b2838, #0a192f);
+            background-size: 400% 400%;
+            animation: gradientShift 12s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Fade-in animation for cover image */
+        .cover-container {
+            animation: fadeInScale 1.5s ease-out;
+            text-align: center;
+        }
+        
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        /* Glowing title */
+        .glow-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #FFD700, #FFA500, #FFD700);
+            background-size: 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s ease-in-out infinite;
+            margin-bottom: 0.2rem;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        
+        .glow-subtitle {
+            text-align: center;
+            color: #8892b0;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            animation: fadeIn 2s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Glassmorphism login card */
+        .login-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            animation: slideUp 1s ease-out 0.5s both;
+        }
+        
+        @keyframes slideUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Pulsing login button */
+        .stButton > button {
+            background: linear-gradient(135deg, #FFD700, #FFA500) !important;
+            color: #0a0a1a !important;
+            font-weight: 700 !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 0.6rem 2rem !important;
+            width: 100% !important;
+            transition: all 0.3s ease !important;
+        }
+        .stButton > button:hover {
+            transform: scale(1.02) !important;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4) !important;
+        }
+        
+        /* Style tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            justify-content: center;
+            gap: 2rem;
+        }
+        .stTabs [data-baseweb="tab"] {
+            color: #8892b0 !important;
+            font-weight: 600;
+        }
+        .stTabs [aria-selected="true"] {
+            color: #FFD700 !important;
+        }
+        
+        /* Particle dots */
+        .particles {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            width: 3px; height: 3px;
+            background: rgba(255, 215, 0, 0.3);
+            border-radius: 50%;
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+    
+    <!-- Floating particles -->
+    <div class="particles">
+        <div class="particle" style="left:10%; animation-duration:8s; animation-delay:0s;"></div>
+        <div class="particle" style="left:25%; animation-duration:12s; animation-delay:2s;"></div>
+        <div class="particle" style="left:40%; animation-duration:10s; animation-delay:4s;"></div>
+        <div class="particle" style="left:55%; animation-duration:14s; animation-delay:1s;"></div>
+        <div class="particle" style="left:70%; animation-duration:9s; animation-delay:3s;"></div>
+        <div class="particle" style="left:85%; animation-duration:11s; animation-delay:5s;"></div>
+        <div class="particle" style="left:15%; animation-duration:13s; animation-delay:6s;"></div>
+        <div class="particle" style="left:60%; animation-duration:7s; animation-delay:2s;"></div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Layout: Centered column
+    col_left, col_center, col_right = st.columns([1, 2, 1])
+    
+    with col_center:
+        # Cover image with fade-in
+        st.markdown('<div class="cover-container">', unsafe_allow_html=True)
+        st.image("cover_page.png", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Animated title
+        st.markdown('<p class="glow-title">🛰️ The National Mineral Intelligence Hub</p>', unsafe_allow_html=True)
+        st.markdown('<p class="glow-subtitle">AI-Powered Remote Sensing for Mineral Prospecting — Republic of Zimbabwe</p>', unsafe_allow_html=True)
+        
+        # Login / Sign Up tabs
+        tab1, tab2 = st.tabs(["🔐 Login", "📝 Sign Up"])
+        
+        with tab1:
+            email = st.text_input("Email", key="login_email", placeholder="Enter your email")
+            password = st.text_input("Password", type="password", key="login_pass", placeholder="Enter your password")
+            if st.button("🚀 Login", use_container_width=True):
+                user, msg = st.session_state.auth_service.login_user(email, password)
+                if user:
+                    st.session_state.authenticated = True
+                    st.session_state.user = user
+                    st.success(f"Welcome back, {user['name']}!")
+                    st.rerun()
                 else:
                     st.error(msg)
-            else:
-                st.warning("Please fill in all fields.")
+                    
+        with tab2:
+            new_email = st.text_input("Email", key="signup_email", placeholder="your@email.com")
+            new_password = st.text_input("Password", type="password", key="signup_pass", placeholder="Create a password")
+            new_name = st.text_input("Full Name", key="signup_name", placeholder="e.g. Takunda Mhandu")
+            new_phone = st.text_input("Phone Number", key="signup_phone", placeholder="+263...")
+            
+            if st.button("✨ Create Account", use_container_width=True):
+                if new_email and new_password and new_name:
+                    success, msg = st.session_state.auth_service.register_user(new_email, new_password, new_name, new_phone)
+                    if success:
+                        st.success("Account created! Please login.")
+                    else:
+                        st.error(msg)
+                else:
+                    st.warning("Please fill in all fields.")
+        
+        st.markdown("---")
+        st.caption("© 2026 National Mineral Intelligence Hub — Republic of Zimbabwe")
     
     st.stop() # Stop execution if not logged in
 
