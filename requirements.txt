@@ -8,3 +8,4 @@ qrcode
 streamlit-js-eval
 earthengine-api
 google-auth
+yfinance

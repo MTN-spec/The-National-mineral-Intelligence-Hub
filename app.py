@@ -466,35 +466,37 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 st.error("⚠️ Earth Engine not connected. Real data unavailable.")
                 scenes = []
             else:
-                # REAL GEE DATA QUERY
-                roi = ee.Geometry.Point([default_center[1], default_center[0]])
-                
-                # Filter Sentinel-2
-                collection = (ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-                              .filterBounds(roi)
-                              .filterDate(datetime.datetime.now() - datetime.timedelta(days=30), datetime.datetime.now())
-                              .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
-                              .sort('system:time_start', False)
-                              .limit(5))
-                
-                # Fetch metadata client-side
-                try:
+                # Cached GEE query to avoid slow blocking calls on every page load
+                @st.cache_data(ttl=600, show_spinner="🛰️ Querying Sentinel-2 archive...")
+                def fetch_sentinel2_scenes(_roi_coords, days_back=30):
+                    """Fetch recent Sentinel-2 scenes (cached for 10 minutes)."""
+                    roi = ee.Geometry.Point(_roi_coords)
+                    collection = (ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+                                  .filterBounds(roi)
+                                  .filterDate(datetime.datetime.now() - datetime.timedelta(days=days_back), datetime.datetime.now())
+                                  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+                                  .sort('system:time_start', False)
+                                  .limit(5))
+                    
                     features = collection.getInfo()['features']
-                    scenes = []
+                    result = []
                     for f in features:
                         props = f['properties']
                         date = datetime.datetime.fromtimestamp(props['system:time_start']/1000).strftime('%d %b %Y')
-                        cid = f['id']
-                        scenes.append({
+                        result.append({
                             "date": date,
                             "cloud": f"{props['CLOUDY_PIXEL_PERCENTAGE']:.1f}%",
                             "sensor": "Sentinel-2 L2A",
-                            "id": cid,
+                            "id": f['id'],
                             "ee_obj": f
                         })
+                    return result
+                
+                try:
+                    scenes = fetch_sentinel2_scenes([default_center[1], default_center[0]])
                 except Exception as e:
                     st.warning(f"Could not fetch GEE scenes: {e}")
-                    scenes = [] # Fail gracefully if query fails
+                    scenes = []
             
             if not scenes and gee_ready:
                 st.info("No recent cloud-free images found.")
