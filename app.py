@@ -48,7 +48,8 @@ if 'user' not in st.session_state:
 # AUTHENTICATION FLOW
 # ==========================================
 if not st.session_state.authenticated:
-    st.title("The National Mineral Intelligence Hub")
+    # Cover Page Image
+    st.image("cover_page.png", use_container_width=True)
     st.subheader("Login to access the platform")
     
     tab1, tab2 = st.tabs(["Login", "Sign Up"])
