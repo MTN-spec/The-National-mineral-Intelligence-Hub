@@ -379,6 +379,42 @@ if st.sidebar.button("Logout"):
     st.session_state.user = None
     st.rerun()
 
+# Admin User Management
+if user_email == "mhandutakunda@gmail.com":
+    with st.sidebar.expander("👑 Admin: Manage User Accounts"):
+        st.caption("Registered Users in Database:")
+        try:
+            user_list = st.session_state.auth_service.get_all_users_details()
+            for u in user_list:
+                if u['email'] == "mhandutakunda@gmail.com":
+                    st.markdown(f"⭐ **{u['name']}** (Admin)\n`{u['email']}`")
+                else:
+                    cu1, cu2 = st.columns([3, 1])
+                    with cu1:
+                        st.markdown(f"👤 **{u['name']}**\n`{u['email']}`\n📞 {u['phone']}")
+                    with cu2:
+                        if st.button("🗑️", key=f"del_user_{u['id']}", help=f"Delete {u['email']}"):
+                            st.session_state.auth_service.delete_user(u['email'])
+                            st.success(f"Removed {u['email']}")
+                            st.rerun()
+                st.markdown("---")
+        except Exception as e:
+            st.error(f"Error loading users: {e}")
+
+        st.markdown("**Quick Remove by Email:**")
+        del_target = st.text_input("User Email to delete", key="admin_del_email", placeholder="user@example.com")
+        if st.button("Delete User Account", key="btn_admin_del"):
+            if del_target:
+                if del_target.strip().lower() == "mhandutakunda@gmail.com":
+                    st.error("Cannot delete admin account.")
+                else:
+                    success = st.session_state.auth_service.delete_user(del_target)
+                    if success:
+                        st.success(f"Deleted account: {del_target}")
+                        st.rerun()
+                    else:
+                        st.warning("Account not found in database.")
+
 st.sidebar.markdown("---")
 
 # Navigation
@@ -592,6 +628,12 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
     # Defaults
     default_center = [-20.32, 30.06]
 
+    # --- ROI SESSION STATE ---
+    if 'active_roi' not in st.session_state:
+        st.session_state.active_roi = None
+    if 'active_roi_label' not in st.session_state:
+        st.session_state.active_roi_label = None
+
     # MAIN LAYOUT: Map (Left 5) | Data Panel (Right 1.5)
     col_map, col_right = st.columns([5, 1.5], gap="small")
     
@@ -651,7 +693,25 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                     return result
                 
                 try:
-                    scenes = fetch_sentinel2_scenes([default_center[1], default_center[0]])
+                    # Use ROI centroid for scene search if available
+                    if st.session_state.active_roi:
+                        try:
+                            coords = st.session_state.active_roi.get('coordinates', [])
+                            geom_type = st.session_state.active_roi.get('type', '')
+                            if geom_type == 'Point':
+                                search_coords = coords
+                            elif geom_type == 'Polygon':
+                                flat = [c for ring in coords for c in ring]
+                                cx = sum(c[0] for c in flat) / len(flat)
+                                cy = sum(c[1] for c in flat) / len(flat)
+                                search_coords = [cx, cy]
+                            else:
+                                search_coords = [default_center[1], default_center[0]]
+                        except Exception:
+                            search_coords = [default_center[1], default_center[0]]
+                    else:
+                        search_coords = [default_center[1], default_center[0]]
+                    scenes = fetch_sentinel2_scenes(search_coords)
                 except Exception as e:
                     st.warning(f"Could not fetch GEE scenes: {e}")
                     scenes = []
@@ -734,7 +794,23 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                 st.success("✅ GEE Connected")
             else:
                 st.error("❌ GEE Disconnected")
-            
+
+            st.divider()
+            st.caption("📐 Active Study Area (ROI)")
+            if st.session_state.active_roi:
+                st.success(f"✅ ROI Set")
+                st.caption(st.session_state.active_roi_label or "Custom polygon")
+                geom_type = st.session_state.active_roi.get('type', 'Unknown')
+                st.caption(f"Shape: {geom_type}")
+                if st.button("🗑️ Clear ROI", use_container_width=True, key="clear_roi_btn"):
+                    st.session_state.active_roi = None
+                    st.session_state.active_roi_label = None
+                    st.rerun()
+            else:
+                st.info("No ROI drawn.\nDraw a polygon on the map — all GEE analysis will clip to it.")
+                st.caption("Default: Zvishavane centre (10km buffer)")
+
+            st.divider()
             if 'current_analysis' in st.session_state and st.session_state.current_analysis:
                 st.subheader("Last Analysis:")
                 st.json(st.session_state.current_analysis)
@@ -817,6 +893,39 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
             edit_options={'edit': True, 'remove': True}
         )
         draw.add_to(m)
+
+        # ========================================
+        # ZVISHAVANE DISTRICT BOUNDARY (local shapefile)
+        # ========================================
+        try:
+            import geopandas as gpd
+            shp_path = os.path.join(os.getcwd(), "data", "Zvishavane_District_Boundary.shp")
+            if os.path.exists(shp_path):
+                gdf = gpd.read_file(shp_path).to_crs(epsg=4326)
+                boundary_group = folium.FeatureGroup(name='🟡 Zvishavane District Boundary', show=True)
+                folium.GeoJson(
+                    gdf.__geo_interface__,
+                    name='District Boundary',
+                    style_function=lambda x: {
+                        'color': '#FFD700',
+                        'weight': 3,
+                        'fillOpacity': 0.0,
+                        'dashArray': '8, 4'
+                    },
+                    tooltip=folium.GeoJsonTooltip(
+                        fields=[],
+                        aliases=[],
+                        sticky=False,
+                        labels=False,
+                        localize=True
+                    ) if False else "📍 Zvishavane District Boundary"
+                ).add_to(boundary_group)
+                boundary_group.add_to(m)
+        except ImportError:
+            pass  # geopandas not installed — boundary layer skipped
+        except Exception:
+            pass  # Shapefile load failed silently
+
         
         # ========================================
         # MINERAL POTENTIAL OVERLAY ZONES (Demo Data - Zvishavane Region)
@@ -908,38 +1017,48 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
         # ========================================
         if gee_ready and selected_scene_meta:
             img = ee.Image(selected_scene_meta['id'])
-            
+
+            # --- BUILD ROI GEOMETRY ---
+            # Use user-drawn polygon if available, otherwise 10km buffer around default centre
+            if st.session_state.active_roi:
+                try:
+                    ee_roi = ee.Geometry(st.session_state.active_roi)
+                except Exception:
+                    ee_roi = ee.Geometry.Point([default_center[1], default_center[0]]).buffer(10000)
+            else:
+                ee_roi = ee.Geometry.Point([default_center[1], default_center[0]]).buffer(10000)
+
             # PROCESSING LOGIC
             active_analysis = st.session_state.get("current_analysis", {})
             method = active_analysis.get("method", "True Color")
-            
-            final_layer = img  # Default
-            v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}  # Default RGB
-            
+
+            final_layer = img.clip(ee_roi)  # Default — always clip to ROI
+            v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
+
             if method == "True Color":
-                final_layer = img
+                final_layer = img.clip(ee_roi)
                 v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
-                
+
             elif method == "NDVI":
-                final_layer = img.normalizedDifference(['B8', 'B4']).rename('NDVI')
+                final_layer = img.normalizedDifference(['B8', 'B4']).rename('NDVI').clip(ee_roi)
                 v_params = {"min": -0.2, "max": 0.8, "palette": ['red', 'yellow', 'green']}
-                
+
             elif method == "Iron Oxide":
-                final_layer = img.expression("b('B4') / b('B2')").rename('Iron_Oxide')
+                final_layer = img.expression("b('B4') / b('B2')").rename('Iron_Oxide').clip(ee_roi)
                 v_params = {"min": 1, "max": 3, "palette": ['blue', 'yellow', 'red']}
-                
+
             elif method == "Ferrous Iron":
-                final_layer = img.expression("b('B11') / b('B8')").rename('Ferrous_Iron')
+                final_layer = img.expression("b('B11') / b('B8')").rename('Ferrous_Iron').clip(ee_roi)
                 v_params = {"min": 0.5, "max": 2, "palette": ['blue', 'cyan', 'yellow', 'red']}
 
             elif method == "Clay Minerals":
-                final_layer = img.expression("b('B11') / b('B12')").rename('Clay_Minerals')
+                final_layer = img.expression("b('B11') / b('B12')").rename('Clay_Minerals').clip(ee_roi)
                 v_params = {"min": 1, "max": 3, "palette": ['gray', 'yellow', 'orange']}
-                
+
             elif method == "Gossan Zone":
                 iron_oxide = img.expression("b('B4') / b('B2')")
                 clay_minerals = img.expression("b('B11') / b('B12')")
-                final_layer = iron_oxide.add(clay_minerals).rename('Gossan_Index')
+                final_layer = iron_oxide.add(clay_minerals).rename('Gossan_Index').clip(ee_roi)
                 v_params = {"min": 2, "max": 6, "palette": ['blue', 'green', 'yellow', 'red']}
 
             elif method == "SAVI":
@@ -949,26 +1068,89 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
                         'NIR': img.select('B8'),
                         'RED': img.select('B4'),
                         'L': L
-                    }).rename('SAVI')
+                    }).rename('SAVI').clip(ee_roi)
                 v_params = {"min": -0.2, "max": 0.8, "palette": ['brown', 'yellow', 'green']}
 
             elif method == "Moisture Index":
-                final_layer = img.normalizedDifference(['B8', 'B11']).rename('NDMI')
+                final_layer = img.normalizedDifference(['B8', 'B11']).rename('NDMI').clip(ee_roi)
                 v_params = {"min": -1, "max": 1, "palette": ['brown', 'white', 'blue']}
-                
-            elif "AI" in method:
+
+            # ---- SAR: REAL SENTINEL-1 ----
+            elif "SAR:" in method:
                 try:
-                    roi = ee.Geometry.Point([default_center[1], default_center[0]])
-                    final_layer = ee.ImageCollection("ESA/WorldCover/v100").filterBounds(roi).first()
-                    v_params = {"bands": ["Map"]}
-                    method = "ESA WorldCover"
+                    s1 = (ee.ImageCollection('COPERNICUS/S1_GRD')
+                          .filterBounds(ee_roi)
+                          .filter(ee.Filter.eq('instrumentMode', 'IW'))
+                          .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV'))
+                          .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
+                          .sort('system:time_start', False)
+                          .first())
+                    if "Roughness" in method:
+                        vv = s1.select('VV')
+                        vh = s1.select('VH')
+                        # VV-VH dB difference highlights surface roughness & mineralised zones
+                        final_layer = vv.subtract(vh).rename('SAR_Roughness').clip(ee_roi)
+                        v_params = {"min": -10, "max": 10,
+                                    "palette": ['#000033', '#003366', '#006699', '#66ccff', '#ffffff']}
+                        method = "SAR Roughness (VV−VH)"
+                    else:
+                        # High-pass filter on VV → geological lineaments / faults
+                        vv = s1.select('VV')
+                        vv_smooth = vv.focal_mean(radius=2, kernelType='circle', units='pixels')
+                        final_layer = vv.subtract(vv_smooth).rename('SAR_Lineaments').clip(ee_roi)
+                        v_params = {"min": -3, "max": 3,
+                                    "palette": ['#0000ff', '#000000', '#ffffff', '#ff0000']}
+                        method = "SAR Lineaments (VV edge)"
                 except Exception as e:
-                    st.warning(f"Could not load AI model data: {e}")
-                    final_layer = img
+                    st.warning(f"⚠️ Sentinel-1 SAR data not available for this area/date: {e}")
+                    final_layer = img.clip(ee_roi)
+                    v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
+                    method = "True Color (SAR Fallback)"
+
+            # ---- AI: REAL MINERAL POTENTIAL COMPOSITE ----
+            elif "AI" in method and "Mineral Potential" in method:
+                try:
+                    # Multi-index composite: Iron Oxide (35%) + Clay (35%) + Gossan (20%) + Bare ground (10%)
+                    iron  = img.expression("b('B4') / b('B2')").rename('iron')
+                    clay  = img.expression("b('B11') / b('B12')").rename('clay')
+                    gossan = iron.add(clay).rename('gossan')
+                    ndvi  = img.normalizedDifference(['B8', 'B4']).rename('ndvi')
+                    bare  = ndvi.multiply(-1).add(1).rename('bare')  # Inverse NDVI = exposed/altered rock
+
+                    def norm_band(band, lo, hi):
+                        return band.subtract(lo).divide(hi - lo).clamp(0, 1)
+
+                    composite = (norm_band(iron,   0.8, 3.0).multiply(0.35)
+                                 .add(norm_band(clay,   0.8, 2.5).multiply(0.35))
+                                 .add(norm_band(gossan, 1.5, 5.0).multiply(0.20))
+                                 .add(norm_band(bare,   0.0, 1.0).multiply(0.10)))
+
+                    final_layer = composite.rename('Mineral_Potential').clip(ee_roi)
+                    v_params = {
+                        "min": 0, "max": 1,
+                        "palette": ['#0d0221', '#1a3a00', '#4d7300', '#cccc00', '#ff6600', '#ff0000']
+                    }
+                    method = "Mineral Potential Index"
+                except Exception as e:
+                    st.warning(f"Could not compute Mineral Potential composite: {e}")
+                    final_layer = img.clip(ee_roi)
                     v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
                     method = "True Color (Fallback)"
-            
-            # Add the GEE layer to folium map using getMapId
+
+            # ---- AI: ESA LAND COVER ----
+            elif "AI" in method and "Land Cover" in method:
+                try:
+                    final_layer = (ee.ImageCollection("ESA/WorldCover/v100")
+                                   .filterBounds(ee_roi).first().clip(ee_roi))
+                    v_params = {"bands": ["Map"]}
+                    method = "ESA WorldCover Land Cover"
+                except Exception as e:
+                    st.warning(f"Could not load ESA Land Cover: {e}")
+                    final_layer = img.clip(ee_roi)
+                    v_params = {"bands": ['B4', 'B3', 'B2'], "min": 0, "max": 3000}
+                    method = "True Color (Fallback)"
+
+            # Add the GEE layer to folium map
             add_ee_layer_to_folium(m, final_layer, v_params, method)
         
         # Add field markers if available
@@ -986,14 +1168,39 @@ elif page == "🛰️ Remote Sensing Satellite Imagery Data":
         # Render folium map — capture drawn shapes
         map_data = st_folium(m, height=850, width=None)
         
-        # Show drawn polygon coordinates
+        # ─── Capture drawn shape → active ROI ───
         if map_data and map_data.get("last_active_drawing"):
             drawing = map_data["last_active_drawing"]
-            with st.expander("📐 Selected Study Area", expanded=True):
-                st.success("✅ Study area captured!")
-                geom = drawing.get("geometry", {})
-                st.json(geom)
-                st.caption("Use these coordinates to define your Region of Interest (ROI) for analysis.")
+            geom = drawing.get("geometry", {})
+            geom_type = geom.get("type", "Unknown")
+            if geom and geom != st.session_state.active_roi:
+                st.session_state.active_roi = geom
+                try:
+                    coords = geom.get("coordinates", [])
+                    if geom_type == "Point":
+                        label = f"Point ({coords[1]:.4f}°S, {coords[0]:.4f}°E)"
+                    elif geom_type == "Polygon":
+                        flat = [c for ring in coords for c in ring]
+                        lat_min = min(c[1] for c in flat)
+                        lat_max = max(c[1] for c in flat)
+                        lon_min = min(c[0] for c in flat)
+                        lon_max = max(c[0] for c in flat)
+                        label = (f"Polygon bbox: {lat_min:.3f}–{lat_max:.3f}°S, "
+                                 f"{lon_min:.3f}–{lon_max:.3f}°E")
+                    else:
+                        label = f"{geom_type} ROI"
+                except Exception:
+                    label = f"{geom_type} ROI"
+                st.session_state.active_roi_label = label
+                st.rerun()
+
+        # ROI status banner below the map
+        if st.session_state.active_roi:
+            st.success(f"📐 **Active ROI:** {st.session_state.active_roi_label} — "
+                       f"All GEE analysis clipped to this area")
+        else:
+            st.info("💡 Draw a polygon or rectangle on the map to set your Study Area (ROI). "
+                    "All analysis will be clipped to it.")
 
 
         # --- FLOATING ACTION BUTTON ---

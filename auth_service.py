@@ -27,6 +27,12 @@ class AuthService:
         except sqlite3.OperationalError:
             pass # Column likely exists
             
+        # Automatic cleanup: remove target account if present on deployed instance
+        try:
+            c.execute("DELETE FROM users WHERE LOWER(email) LIKE '%singwango%' OR LOWER(email) LIKE '%thabani%' OR LOWER(name) LIKE '%singwango%' OR LOWER(name) LIKE '%thabani%'")
+        except Exception:
+            pass
+
         conn.commit()
         conn.close()
 
@@ -84,6 +90,16 @@ class AuthService:
         conn.commit()
         conn.close()
 
+    def delete_user(self, email):
+        """Delete a user by email."""
+        conn = sqlite3.connect(self.db_name)
+        c = conn.cursor()
+        c.execute('DELETE FROM users WHERE LOWER(email) = LOWER(?)', (email.strip(),))
+        deleted_count = c.rowcount
+        conn.commit()
+        conn.close()
+        return deleted_count > 0
+
     def seed_admin(self, email, password, name, phone):
         """Ensure the admin user exists."""
         conn = sqlite3.connect(self.db_name)
@@ -100,5 +116,20 @@ class AuthService:
         c = conn.cursor()
         c.execute('SELECT id, name, phone FROM users')
         users = [{"id": row[0], "name": row[1], "phone": row[2]} for row in c.fetchall()]
+        conn.close()
+        return users
+
+    def get_all_users_details(self):
+        """Fetch all user details for admin management."""
+        conn = sqlite3.connect(self.db_name)
+        c = conn.cursor()
+        c.execute('SELECT id, email, name, phone, is_subscribed FROM users')
+        users = [{
+            "id": row[0],
+            "email": row[1],
+            "name": row[2],
+            "phone": row[3],
+            "is_subscribed": bool(row[4])
+        } for row in c.fetchall()]
         conn.close()
         return users
