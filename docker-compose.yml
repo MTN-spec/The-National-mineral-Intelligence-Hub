@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  mining-hub:
+    build: .
+    container_name: mtnspec_mining_hub
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PRODUCTION=true
+      - DOMAIN=mining.mtnspec.co.zw
+    volumes:
+      - ./data:/app/data
+      - ./users.db:/app/users.db

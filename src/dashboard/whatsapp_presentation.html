@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Contact Card | Takunda Nigel Mhandu</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #060e15;
+            --bg-card: #0b1722;
+            --wa-green: #25D366;
+            --wa-teal: #128C7E;
+            --text-primary: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background-image: 
+                radial-gradient(circle at 85% 15%, rgba(37, 211, 102, 0.14), transparent 45%),
+                radial-gradient(circle at 15% 85%, rgba(6, 182, 212, 0.12), transparent 45%);
+        }
+
+        .presentation-container {
+            width: 100%;
+            max-width: 1140px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 48px;
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ambient-accent {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #10b981, #25D366, #06b6d4, #f59e0b);
+        }
+
+        /* Top Bar */
+        .card-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 36px;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(37, 211, 102, 0.12);
+            border: 1px solid rgba(37, 211, 102, 0.35);
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--wa-green);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .action-btn.primary {
+            background: var(--wa-green);
+            color: #06121c;
+            border: none;
+            font-weight: 700;
+        }
+
+        .action-btn.primary:hover {
+            background: #20ba5a;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.25fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+
+        @media (max-width: 880px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+        }
+
+        /* Profile Side */
+        .profile-side {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .avatar-frame {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            padding: 3px;
+            background: linear-gradient(135deg, var(--wa-green), #06b6d4);
+            box-shadow: 0 0 24px rgba(37, 211, 102, 0.3);
+            flex-shrink: 0;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: center 15%;
+            display: block;
+        }
+
+        .profile-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.15;
+        }
+
+        .profile-role {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--wa-green);
+            margin-top: 4px;
+        }
+
+        .profile-dept {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .info-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px 18px;
+            transition: all 0.2s ease;
+        }
+
+        .info-row:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(37, 211, 102, 0.3);
+        }
+
+        .info-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(37, 211, 102, 0.12);
+            color: var(--wa-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .info-text-group {
+            flex: 1;
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .info-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-top: 2px;
+        }
+
+        /* QR Side */
+        .qr-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(37, 211, 102, 0.4);
+            border-radius: 24px;
+            padding: 32px 24px;
+            text-align: center;
+            box-shadow: 0 16px 40px rgba(37, 211, 102, 0.15);
+        }
+
+        .qr-badge {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--wa-green);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .qr-image-wrapper {
+            background: #ffffff;
+            padding: 14px;
+            border-radius: 18px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+            margin-bottom: 16px;
+        }
+
+        .qr-img {
+            width: 250px;
+            height: 250px;
+            display: block;
+        }
+
+        .qr-link-pill {
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            padding: 6px 16px;
+            border-radius: 999px;
+            margin-bottom: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .qr-link-pill:hover {
+            background: rgba(37, 211, 102, 0.2);
+            color: var(--wa-green);
+            border-color: var(--wa-green);
+        }
+
+        .qr-instruction {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Footer */
+        .presentation-footer {
+            margin-top: 36px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11.5px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="presentation-container">
+        <div class="ambient-accent"></div>
+
+        <!-- Top Bar -->
+        <div class="card-topbar">
+            <div class="brand-badge">
+                <i data-lucide="gem" style="width:14px;height:14px;"></i>
+                The National Mineral Intelligence Hub
+            </div>
+            <div class="top-actions">
+                <a href="/whatsapp_presentation_slide.png" download="Takunda_Mhandu_Presentation_Slide.png" class="action-btn" title="Download Full HD Slide">
+                    <i data-lucide="download" style="width:14px;height:14px;"></i> Download Slide
+                </a>
+                <a href="/whatsapp_qr_takunda_mhandu.png" download="Takunda_Mhandu_WhatsApp_QR.png" class="action-btn" title="Download Standalone QR PNG">
+                    <i data-lucide="qr-code" style="width:14px;height:14px;"></i> QR Image
+                </a>
+                <a href="https://wa.me/263779770395?text=Hello%20Takunda%2C%20I%20am%20contacting%20you%20regarding%20The%20National%20Mineral%20Intelligence%20Hub" target="_blank" class="action-btn primary">
+                    <i data-lucide="message-circle" style="width:14px;height:14px;"></i> Open WhatsApp
+                </a>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Profile Info -->
+            <div class="profile-side">
+                <div class="profile-header">
+                    <div class="avatar-frame">
+                        <img src="/user_profile.jpg" alt="Takunda Nigel Mhandu" class="avatar-img" onerror="this.src='/assets/user_profile.jpg'">
+                    </div>
+                    <div>
+                        <h1 class="profile-name">Takunda Nigel Mhandu</h1>
+                        <div class="profile-role">Lead Innovator & Systems Architect</div>
+                        <div class="profile-dept">Earth Observation & Mineral Intelligence • Zimbabwe</div>
+                    </div>
+                </div>
+
+                <div class="info-cards">
+                    <div class="info-row">
+                        <div class="info-icon"><i data-lucide="phone"></i></div>
+                        <div class="info-text-group">
+                            <div class="info-label">Direct WhatsApp / Mobile</div>
+                            <div class="info-value">+263 779 770 395</div>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-icon"><i data-lucide="mail"></i></div>
+                        <div class="info-text-group">
+                            <div class="info-label">Official Correspondence</div>
+                            <div class="info-value">mhandutakunda@gmail.com</div>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-icon"><i data-lucide="satellite"></i></div>
+                        <div class="info-text-group">
+                            <div class="info-label">Key Research & Focus</div>
+                            <div class="info-value">GIS, Remote Sensing, Sentinel-2 Spectral Indices & Cadastre</div>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-icon"><i data-lucide="graduation-cap"></i></div>
+                        <div class="info-text-group">
+                            <div class="info-label">Affiliation</div>
+                            <div class="info-value">National University of Science & Technology (NUST)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QR Code Card -->
+            <div class="qr-side">
+                <div class="qr-badge">
+                    <i data-lucide="scan-line" style="width:16px;height:16px;"></i>
+                    SCAN TO CHAT ON WHATSAPP
+                </div>
+                <div class="qr-image-wrapper">
+                    <img src="/whatsapp_qr_takunda_mhandu.png" alt="WhatsApp QR Code - Takunda Nigel Mhandu" class="qr-img">
+                </div>
+                <a href="https://wa.me/263779770395" target="_blank" class="qr-link-pill">
+                    wa.me/263779770395
+                </a>
+                <p class="qr-instruction">
+                    Open WhatsApp or your smartphone camera and point at the code to connect instantly.
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="presentation-footer">
+            <span>The National Mineral Intelligence Hub &copy; 2026</span>
+            <span>Presentation Contact Showcase • Zimbabwe Mineral Sovereignty</span>
+        </div>
+    </div>
+
+    <script>
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

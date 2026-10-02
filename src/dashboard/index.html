@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="The National Mineral Intelligence Hub — Earth Observation & Mineral Prospecting System for Zimbabwe">
+    
+    <title>National Mineral Intelligence Hub | Zimbabwe</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <!-- QR Code & PDF Libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <link rel="stylesheet" href="styles.css?v=20261002_02">
+</head>
+
+<body>
+
+    <!-- ===== LOGIN OVERLAY ===== -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-card">
+            <!-- Left Side: Login Form -->
+            <div class="login-left">
+                <div class="login-logo">
+                    <i data-lucide="gem" style="width:32px;height:32px;color:#f59e0b"></i>
+                </div>
+                <h1 class="login-title">Mineral Intelligence Hub</h1>
+                <p class="login-subtitle">National Earth Observation & Mining Registry</p>
+
+                <div class="login-badge">
+                    <i data-lucide="shield-check" style="width:14px;height:14px;color:#10b981"></i>
+                    Authorized Mining & Regulatory Personnel
+                </div>
+
+                <div class="login-form" style="width: 100%;">
+                    <div class="input-group">
+                        <label>Officer / Miner Email</label>
+                        <input type="text" id="login-user" class="login-input" value="mhandutakunda@gmail.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Security Password</label>
+                        <input type="password" id="login-pass" class="login-input" value="Mimosa@2030">
+                    </div>
+                    <div id="login-error" class="login-error">Authentication failed. Check credentials.</div>
+                    <button id="login-btn" class="login-btn">
+                        <i data-lucide="lock" style="width:16px;height:16px;"></i>
+                        Secure Portal Access
+                    </button>
+                    <div style="margin-top:12px; font-size:11px; color:var(--text-muted); text-align:center;">
+                        Zimbabwe National Innovation Specification
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Official Showcase Artwork & Mobile QR Connection -->
+            <div class="login-right">
+                <div class="login-cover-preview">
+                    <img src="/assets/cover_logo.jpg" alt="Zimbabwe National Mineral Intelligence Hub" class="login-cover-img" style="object-position: center top;">
+                    <div class="login-artwork-badge">
+                        <i data-lucide="award" style="width:13px;height:13px;"></i>
+                        <span>ZIMBABWE MINERAL SOVEREIGNTY 2026</span>
+                    </div>
+                </div>
+
+                <div class="login-qr-wrapper">
+                    <div id="login-qr-container" class="login-qr-container"></div>
+                </div>
+                <div class="login-qr-title">
+                    <i data-lucide="smartphone" style="width:14px; height:14px; color:var(--text-accent);"></i>
+                    Mobile Field App QR
+                </div>
+                <p class="login-qr-desc">
+                    Scan with any smartphone for GPS ground-truth validation & EcoCash permit inspection.
+                </p>
+                <div class="quick-stats-row">
+                    <div class="mini-stat">
+                        <span class="mini-val">6</span>
+                        <span class="mini-lbl">Mining Belts</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-val">Sentinel-2</span>
+                        <span class="mini-lbl">10m Optical MSI</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-val">EcoCash</span>
+                        <span class="mini-lbl">Instant Transit QR</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== LEFT ICON SIDEBAR ===== -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-logo" id="sidebar-logo" data-tooltip="Zimbabwe Mineral Intelligence Hub">
+            <span class="logo-icon"><img src="/assets/cover_logo.jpg" alt="NMIH Logo" class="sidebar-logo-img" style="object-fit:cover; object-position: center top; border-radius:6px;"></span>
+            <span class="logo-text">HUB</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-btn active" data-tooltip="Dashboard Overview" data-panel="none" id="nav-dashboard">
+                <i data-lucide="layout-dashboard"></i>
+            </button>
+
+            <!-- 4 PRIMARY PLATFORM MODULES -->
+            <button class="nav-btn" data-tooltip="1. Remote Sensing (Satellite Bands & Alteration)" data-panel="layers" id="nav-layers">
+                <i data-lucide="satellite"></i>
+            </button>
+            <button class="nav-btn" data-tooltip="2. Career & Skills Hub (Akello Micro-Credentials)" data-panel="skills" id="nav-skills">
+                <i data-lucide="graduation-cap"></i>
+            </button>
+            <button class="nav-btn" data-tooltip="3. Mentorship & Talent (Senior Advisors & Graduates)" data-panel="mentorship" id="nav-mentorship">
+                <i data-lucide="users"></i>
+            </button>
+            <button class="nav-btn" data-tooltip="4. Wallet (EcoCash Payments & QR Permits)" data-panel="wallet" id="nav-wallet">
+                <i data-lucide="wallet"></i>
+            </button>
+
+            <div class="nav-divider"></div>
+
+            <button class="nav-btn" data-tooltip="Mining Concessions & Cadastre" data-panel="concessions" id="nav-concessions">
+                <i data-lucide="map-pin"></i>
+            </button>
+            <button class="nav-btn" data-tooltip="Live Commodity Market Prices" data-panel="market" id="nav-market">
+                <i data-lucide="trending-up"></i>
+            </button>
+            <button class="nav-btn" data-tooltip="System Architecture & Showcase" data-panel="none" id="nav-architecture" style="color: #a78bfa;">
+                <i data-lucide="network"></i>
+            </button>
+            <button class="nav-btn" data-tooltip="Environmental & Compliance Flags" data-panel="alerts" id="nav-alerts">
+                <i data-lucide="bell"></i>
+                <span class="notification-badge" id="alert-badge-count">2</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <button class="nav-btn" data-tooltip="System Settings" data-panel="none" id="nav-settings">
+                <i data-lucide="settings"></i>
+            </button>
+            <button class="nav-btn" data-tooltip="Logout" data-panel="none" id="nav-logout" style="color:#ef4444">
+                <i data-lucide="log-out"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- ===== TOP BAR ===== -->
+    <header id="topbar" class="topbar">
+        <div class="topbar-left">
+            <div class="topbar-brand">
+                <a href="https://mtnspec.co.zw" target="_blank" rel="noopener noreferrer" title="MTNSPEC Official Portal | Technology & Network Specialties" style="display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit;">
+                    <img src="mtnspec_logo.png" alt="MTNSPEC" style="height:24px; width:auto; object-fit:contain; border-radius:3px;">
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-size:10px; font-weight:800; color:#38bdf8; letter-spacing:0.06em; line-height:1.1;">MTNSPEC</span>
+                        <span style="font-size:8.5px; color:var(--text-muted); line-height:1;">mtnspec.co.zw ↗</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="topbar-center">
+            <!-- Satellite Completeness Meter -->
+            <div class="imagery-quota">
+                <span class="quota-label">Sentinel-2 MSI Coverage</span>
+                <div class="quota-bar">
+                    <div class="quota-fill" id="coverage-fill" style="width: 94%"></div>
+                </div>
+                <span class="quota-value" id="coverage-value">94.8% Live</span>
+            </div>
+
+            <!-- CNBC Closing Bell Mineral News & Commodity Broadcast Ticker -->
+            <div class="cnbc-broadcast-ticker" id="cnbc-ticker-container">
+                <div class="cnbc-ticker-badge">
+                    <span class="cnbc-pulse-dot"></span>
+                    <span class="cnbc-badge-text">CNBC METALS</span>
+                </div>
+                <div class="cnbc-ticker-track-wrap">
+                    <div class="cnbc-ticker-track" id="cnbc-ticker-track">
+                        <!-- Initial real-world ticker items, updated dynamically from api/market/prices -->
+                        <div class="cnbc-ticker-item">
+                            <span class="cnbc-sym">GOLD (GC=F)</span>
+                            <span class="cnbc-val">$2,894.20</span>
+                            <span class="cnbc-chg up">▲ +1.42%</span>
+                        </div>
+                        <div class="cnbc-ticker-item">
+                            <span class="cnbc-sym">PLATINUM (PL=F)</span>
+                            <span class="cnbc-val">$986.50</span>
+                            <span class="cnbc-chg up">▲ +0.68%</span>
+                        </div>
+                        <div class="cnbc-ticker-item">
+                            <span class="cnbc-sym">PALLADIUM (PA=F)</span>
+                            <span class="cnbc-val">$1,048.00</span>
+                            <span class="cnbc-chg down">▼ -0.35%</span>
+                        </div>
+                        <div class="cnbc-ticker-item">
+                            <span class="cnbc-sym">COPPER (HG=F)</span>
+                            <span class="cnbc-val">$4.45/lb</span>
+                            <span class="cnbc-chg up">▲ +1.15%</span>
+                        </div>
+                        <div class="cnbc-ticker-item">
+                            <span class="cnbc-sym">LITHIUM SPODUMENE</span>
+                            <span class="cnbc-val">$1,280/t</span>
+                            <span class="cnbc-chg up">▲ +0.50%</span>
+                        </div>
+                        <div class="cnbc-ticker-item">
+                            <span class="cnbc-sym">RBZ FIDELITY SPOT</span>
+                            <span class="cnbc-val">77,620 ZiG/oz</span>
+                            <span class="cnbc-chg up">▲ +0.12%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="topbar-right">
+            <!-- Active Mining Scene Selector -->
+            <div class="scene-selector-wrapper">
+                <i data-lucide="globe" style="width:14px;height:14px;color:var(--text-accent)"></i>
+                <select id="scene-select" class="scene-select">
+                    <option value="SCENE-GD-CENTRAL">Great Dyke Central (Selukwe & Hartley)</option>
+                    <option value="SCENE-KADOMA-GOLD">Kadoma Archaean Gold Corridor</option>
+                    <option value="SCENE-BIKITA-LI">Bikita Pegmatite Belt (Lithium)</option>
+                    <option value="SCENE-GWANDA-GREEN">Gwanda Greenstone Complex</option>
+                </select>
+            </div>
+
+            <!-- Presentation WhatsApp QR Button -->
+            <a href="/whatsapp_presentation.html" target="_blank" class="topbar-wa-btn" title="Open Presentation WhatsApp QR Card">
+                <i data-lucide="qr-code" style="width:14px;height:14px;color:#25D366;"></i>
+                <span>WhatsApp QR</span>
+            </a>
+
+            <!-- User Avatar & Profile Badge -->
+            <div class="user-profile" id="user-profile-btn" title="Takunda Nigel Mhandu | NUST GIS & Remote Sensing">
+                <div class="user-avatar" id="user-avatar" style="background-image: url('/assets/user_profile.jpg'); background-size: cover; background-position: center 15%; color: transparent;">TM</div>
+                <div class="user-info-text">
+                    <span class="user-name">Takunda Mhandu</span>
+                    <span class="user-role">Lead Mineral Intelligence</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== MAP CONTAINER ===== -->
+    <main id="map-container" class="map-container">
+        <div id="map" class="map"></div>
+
+        <!-- Map Controls Overlay -->
+        <div class="map-controls" id="map-controls">
+            <button class="map-ctrl-btn" id="zoom-in" data-tooltip-left="Zoom In">
+                <i data-lucide="plus"></i>
+            </button>
+            <button class="map-ctrl-btn" id="zoom-out" data-tooltip-left="Zoom Out">
+                <i data-lucide="minus"></i>
+            </button>
+            <div class="map-ctrl-divider"></div>
+            <button class="map-ctrl-btn" id="btn-basemap" data-tooltip-left="Select Geospatial Basemap">
+                <i data-lucide="layers-2"></i>
+            </button>
+            <button class="map-ctrl-btn" id="btn-boundaries" data-tooltip-left="Admin & Protected Boundaries">
+                <i data-lucide="shield-alert"></i>
+            </button>
+            <button class="map-ctrl-btn" id="locate-me" data-tooltip-left="Center on Zimbabwe Great Dyke">
+                <i data-lucide="crosshair"></i>
+            </button>
+            <button class="map-ctrl-btn" id="toggle-concessions" data-tooltip-left="Toggle Claim Boundaries">
+                <i data-lucide="shapes"></i>
+            </button>
+            <button class="map-ctrl-btn" id="fullscreen" data-tooltip-left="Fullscreen">
+                <i data-lucide="maximize-2"></i>
+            </button>
+        </div>
+
+        <!-- Professional Multi-Basemap Selector Flyout -->
+        <div class="basemap-flyout hidden" id="basemap-flyout">
+            <div class="basemap-flyout-header">
+                <div class="flyout-title-row">
+                    <i data-lucide="map" style="width:14px;height:14px;color:var(--text-accent);"></i>
+                    <span class="flyout-title">GEOSPATIAL BASEMAPS</span>
+                </div>
+                <button class="flyout-close-btn" id="close-basemap-flyout" title="Close Basemaps">
+                    <i data-lucide="x" style="width:12px;height:12px;"></i>
+                </button>
+            </div>
+            <div class="basemap-options-list">
+                <!-- 1. Esri Dark Canvas -->
+                <div class="basemap-option-card active" data-basemap="dark">
+                    <div class="basemap-preview-thumb thumb-dark">
+                        <span class="thumb-check"><i data-lucide="check" style="width:10px;height:10px;"></i></span>
+                    </div>
+                    <div class="basemap-option-info">
+                        <div class="basemap-opt-name">Esri Dark Gray Canvas</div>
+                        <div class="basemap-opt-desc">Default • Spectral band math & high contrast</div>
+                    </div>
+                </div>
+
+                <!-- 2. Esri Satellite Imagery -->
+                <div class="basemap-option-card" data-basemap="satellite">
+                    <div class="basemap-preview-thumb thumb-satellite">
+                        <span class="thumb-check"><i data-lucide="check" style="width:10px;height:10px;"></i></span>
+                    </div>
+                    <div class="basemap-option-info">
+                        <div class="basemap-opt-name">Esri World Satellite</div>
+                        <div class="basemap-opt-desc">High-Res orbital orthophoto • Physical pits & reefs</div>
+                    </div>
+                </div>
+
+                <!-- 3. OpenStreetMap (OSM) -->
+                <div class="basemap-option-card" data-basemap="osm">
+                    <div class="basemap-preview-thumb thumb-osm">
+                        <span class="thumb-check"><i data-lucide="check" style="width:10px;height:10px;"></i></span>
+                    </div>
+                    <div class="basemap-option-info">
+                        <div class="basemap-opt-name">OpenStreetMap (OSM)</div>
+                        <div class="basemap-opt-desc">Detailed road network • Logistics & settlements</div>
+                    </div>
+                </div>
+
+                <!-- 4. Esri World Topographic -->
+                <div class="basemap-option-card" data-basemap="topo">
+                    <div class="basemap-preview-thumb thumb-topo">
+                        <span class="thumb-check"><i data-lucide="check" style="width:10px;height:10px;"></i></span>
+                    </div>
+                    <div class="basemap-option-info">
+                        <div class="basemap-opt-name">Esri World Topographic</div>
+                        <div class="basemap-opt-desc">Hillshade contours • Great Dyke ridges & grabens</div>
+                    </div>
+                </div>
+
+                <!-- 5. Esri National Geographic Atlas -->
+                <div class="basemap-option-card" data-basemap="natgeo">
+                    <div class="basemap-preview-thumb thumb-natgeo">
+                        <span class="thumb-check"><i data-lucide="check" style="width:10px;height:10px;"></i></span>
+                    </div>
+                    <div class="basemap-option-info">
+                        <div class="basemap-opt-name">National Geographic</div>
+                        <div class="basemap-opt-desc">Classic cartographic atlas • Rivers & boundaries</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Professional Administrative & Conservation Boundaries Flyout -->
+        <div class="basemap-flyout admin-boundaries-flyout hidden" id="boundaries-flyout">
+            <div class="basemap-flyout-header">
+                <div class="flyout-title-row">
+                    <i data-lucide="landmark" style="width:14px;height:14px;color:#38bdf8;"></i>
+                    <span class="flyout-title">MAP LAYERS — ADMIN, ENV & GEO</span>
+                </div>
+                <button class="flyout-close-btn" id="close-boundaries-flyout" title="Close Boundaries">
+                    <i data-lucide="x" style="width:12px;height:12px;"></i>
+                </button>
+            </div>
+            
+            <div class="boundaries-toggle-list">
+                <!-- 1. Provinces -->
+                <div class="boundary-toggle-card active" id="card-toggle-provinces" data-layer="provinces">
+                    <div class="boundary-color-dot" style="background:#38bdf8;box-shadow:0 0 8px #38bdf8;"></div>
+                    <div class="boundary-info">
+                        <div class="boundary-name-row">
+                            <span class="boundary-name">Provinces (Level 1)</span>
+                            <span class="boundary-count-badge" id="badge-provinces-count">10</span>
+                        </div>
+                        <div class="boundary-desc">10 Gazetted Provinces & Metropolitan Areas</div>
+                    </div>
+                    <label class="switch-toggle" onclick="event.stopPropagation();">
+                        <input type="checkbox" id="chk-provinces" checked>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <!-- 2. Districts -->
+                <div class="boundary-toggle-card active" id="card-toggle-districts" data-layer="districts">
+                    <div class="boundary-color-dot" style="background:#fbbf24;box-shadow:0 0 8px #fbbf24;"></div>
+                    <div class="boundary-info">
+                        <div class="boundary-name-row">
+                            <span class="boundary-name">Districts (Level 2)</span>
+                            <span class="boundary-count-badge" id="badge-districts-count">91</span>
+                        </div>
+                        <div class="boundary-desc">91 Mining cadastre districts across all 10 provinces</div>
+                    </div>
+                    <label class="switch-toggle" onclick="event.stopPropagation();">
+                        <input type="checkbox" id="chk-districts" checked>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <!-- 3. Wards -->
+                <div class="boundary-toggle-card active" id="card-toggle-wards" data-layer="wards">
+                    <div class="boundary-color-dot" style="background:#c084fc;box-shadow:0 0 8px #c084fc;"></div>
+                    <div class="boundary-info">
+                        <div class="boundary-name-row">
+                            <span class="boundary-name">Wards (Level 3)</span>
+                            <span class="boundary-count-badge" id="badge-wards-count">1,961</span>
+                        </div>
+                        <div class="boundary-desc">1,961 Electoral & local ASM artisanal wards nationwide</div>
+                    </div>
+                    <label class="switch-toggle" onclick="event.stopPropagation();">
+                        <input type="checkbox" id="chk-wards" checked>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <!-- 4. Protected Areas / Parks -->
+                <div class="boundary-toggle-card active" id="card-toggle-parks" data-layer="protected_areas">
+                    <div class="boundary-color-dot" style="background:#10b981;box-shadow:0 0 8px #10b981;"></div>
+                    <div class="boundary-info">
+                        <div class="boundary-name-row">
+                            <span class="boundary-name">Protected Areas & Parks</span>
+                            <span class="boundary-strict-badge">ZERO MINING</span>
+                        </div>
+                        <div class="boundary-desc">12 ZimParks National Parks, Safari & Forest Reserves</div>
+                    </div>
+                    <label class="switch-toggle" onclick="event.stopPropagation();">
+                        <input type="checkbox" id="chk-parks" checked>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <!-- 5. Rivers -->
+                <div class="boundary-toggle-card" id="card-toggle-rivers" data-layer="rivers">
+                    <div class="boundary-color-dot" style="background:#38bdf8;box-shadow:0 0 8px #38bdf8; border-radius:2px; width:16px; height:4px;"></div>
+                    <div class="boundary-info">
+                        <div class="boundary-name-row">
+                            <span class="boundary-name">Rivers & Hydrology</span>
+                            <span class="boundary-count-badge" id="badge-rivers-count">–</span>
+                        </div>
+                        <div class="boundary-desc">National river network • Basin discharge & river order</div>
+                    </div>
+                    <label class="switch-toggle" onclick="event.stopPropagation();">
+                        <input type="checkbox" id="chk-rivers">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <!-- 6. Soil -->
+                <div class="boundary-toggle-card" id="card-toggle-soil" data-layer="soil">
+                    <div class="boundary-color-dot" style="background:#b45309;box-shadow:0 0 8px #b45309;"></div>
+                    <div class="boundary-info">
+                        <div class="boundary-name-row">
+                            <span class="boundary-name">Soil Classification</span>
+                            <span class="boundary-count-badge" id="badge-soil-count">–</span>
+                        </div>
+                        <div class="boundary-desc">FAO World Soil Map • DOMSOI codes + mining relevance</div>
+                    </div>
+                    <label class="switch-toggle" onclick="event.stopPropagation();">
+                        <input type="checkbox" id="chk-soil">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <!-- 7. Geology -->
+                <div class="boundary-toggle-card" id="card-toggle-geology" data-layer="geology">
+                    <div class="boundary-color-dot" style="background:#8B4513;box-shadow:0 0 8px #CD853F;"></div>
+                    <div class="boundary-info">
+                        <div class="boundary-name-row">
+                            <span class="boundary-name">Geology (BGS/FAO)</span>
+                            <span class="boundary-count-badge" id="badge-geology-count">–</span>
+                        </div>
+                        <div class="boundary-desc">Africa geology clipped to Zimbabwe • GLG rock unit codes</div>
+                    </div>
+                    <label class="switch-toggle" onclick="event.stopPropagation();">
+                        <input type="checkbox" id="chk-geology">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Bulk Toggles Footer -->
+            <div class="boundaries-footer-actions">
+                <button class="btn-sm-action" id="btn-boundaries-all-on" title="Turn on all 7 layers">Show All</button>
+                <button class="btn-sm-action secondary" id="btn-boundaries-all-off" title="Turn off all layers">Hide All</button>
+                <button class="btn-sm-action secondary" id="btn-boundaries-fit" title="Zoom map to full Zimbabwe extent"><i data-lucide="maximize-2" style="width:10px;height:10px;display:inline;margin-right:2px;"></i>Fit Zim</button>
+            </div>
+        </div>
+
+        <!-- Map Info Overlay (bottom-left) -->
+        <div class="map-info" id="map-info">
+            <span class="active-basemap-pill" id="hud-basemap-name"><i data-lucide="map-pin" style="width:11px;height:11px;display:inline;vertical-align:middle;margin-right:3px;"></i>Esri Dark Canvas</span>
+            <span class="separator">|</span>
+            <span class="active-basemap-pill" id="hud-boundary-pill" style="cursor:pointer;" title="Click to configure boundary layers"><i data-lucide="landmark" style="width:11px;height:11px;display:inline;vertical-align:middle;margin-right:3px;color:#38bdf8;"></i>Bounds: Prov & Dist & Parks</span>
+            <span class="separator">|</span>
+            <span id="coords">-19.670°S, 30.005°E</span>
+            <span class="separator">|</span>
+            <span id="zoom-level">Zoom: 7</span>
+            <span class="separator">|</span>
+            <span id="scale">25 km</span>
+            <span class="separator">|</span>
+            <span id="crs-badge">EPSG:4326 (WGS 84)</span>
+        </div>
+
+        <!-- Active Spectral Index Color Swatch Legend -->
+        <div class="active-index-badge" id="active-index-badge">
+            <div class="index-color-swatch" id="legend-swatch" style="background: linear-gradient(90deg, #2b83ba, #abdda4, #ffffbf, #fdae61, #d7191c)"></div>
+            <div class="index-meta">
+                <span class="index-label" id="legend-label">Iron Oxide (B4 / B2)</span>
+                <span class="index-range" id="legend-range">Low (0.5) — High Hematite/Gossan (3.2)</span>
+            </div>
+            <button class="legend-info-btn" id="legend-info-btn" title="View index band formula">
+                <i data-lucide="info" style="width:14px;height:14px;"></i>
+            </button>
+        </div>
+
+        <!-- Floating Quick Overview Cards (Bottom Left) -->
+        <div class="floating-metrics-bar" id="floating-metrics-bar">
+            <div class="float-card">
+                <span class="float-num" id="float-total-claims">6</span>
+                <span class="float-desc">Monitored Belts</span>
+            </div>
+            <div class="float-card">
+                <span class="float-num text-gold" id="float-high-yield">5</span>
+                <span class="float-desc">High Yield Zones</span>
+            </div>
+            <div class="float-card">
+                <span class="float-num text-green" id="float-compliance-avg">89%</span>
+                <span class="float-desc">Avg Compliance</span>
+            </div>
+            <div class="float-card">
+                <span class="float-num text-cyan">Sentinel-2</span>
+                <span class="float-desc">Level-2A 10m/20m</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===== RIGHT SLIDE-OUT PANEL ===== -->
+    <aside id="right-panel" class="right-panel">
+        <div class="panel-header">
+            <div class="panel-header-title">
+                <i data-lucide="compass" id="panel-icon" style="width:16px;height:16px;color:var(--text-accent)"></i>
+                <h2 id="panel-title">MINING CONCESSIONS</h2>
+            </div>
+            <button class="panel-close" id="panel-close" title="Close Panel">
+                <i data-lucide="chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Panel 1: Mining Concessions Content -->
+        <div class="panel-content" id="panel-concessions">
+            <div class="search-box" id="search-box">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" placeholder="Filter concessions by name, mineral, or license..." id="search-input">
+            </div>
+
+            <div class="panel-filters">
+                <button class="filter-chip active" data-filter="all">All</button>
+                <button class="filter-chip" data-filter="active">Active</button>
+                <button class="filter-chip" data-filter="highyield">High Yield</button>
+                <button class="filter-chip" data-filter="warning">Alerts</button>
+            </div>
+
+            <div class="concessions-list" id="concessions-list">
+                <!-- Dynamically populated concession cards -->
+                <div class="loading-state">
+                    <i data-lucide="loader-2" class="spin-icon"></i>
+                    <span>Loading Zimbabwean mining registry...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 2: Satellite Spectral Layers Content (hidden by default) -->
+        <div class="panel-content hidden" id="panel-layers">
+            <div class="layers-tabs">
+                <button class="layer-tab active" data-tab="all">All</button>
+                <button class="layer-tab" data-tab="mineral">Minerals</button>
+                <button class="layer-tab" data-tab="env">Environment</button>
+                <button class="layer-tab" data-tab="struct">Structure</button>
+            </div>
+
+            <div class="layers-grid" id="layers-grid">
+                <!-- 1. True Color -->
+                <div class="layer-card" data-layer="truecolor" data-category="all">
+                    <div class="layer-thumb truecolor-thumb">
+                        <div class="thumb-badge">RGB</div>
+                    </div>
+                    <span class="layer-name">True Color</span>
+                    <span class="layer-desc">Natural Sentinel-2 (B4+B3+B2)</span>
+                </div>
+
+                <!-- 2. Iron Oxide -->
+                <div class="layer-card active" data-layer="iron_oxide" data-category="mineral">
+                    <div class="layer-thumb iron-oxide-thumb">
+                        <div class="thumb-badge">B4/B2</div>
+                    </div>
+                    <span class="layer-name">Iron Oxide</span>
+                    <span class="layer-desc">Hematite & Goethite Gossans</span>
+                </div>
+
+                <!-- 3. Ferrous Iron -->
+                <div class="layer-card" data-layer="ferrous_iron" data-category="mineral">
+                    <div class="layer-thumb ferrous-iron-thumb">
+                        <div class="thumb-badge">SWIR2+NIR</div>
+                    </div>
+                    <span class="layer-name">Ferrous Iron</span>
+                    <span class="layer-desc">Ultramafic & Mafic Silicates</span>
+                </div>
+
+                <!-- 4. Clay Minerals -->
+                <div class="layer-card" data-layer="clay_minerals" data-category="mineral">
+                    <div class="layer-thumb clay-minerals-thumb">
+                        <div class="thumb-badge">B11/B12</div>
+                    </div>
+                    <span class="layer-name">Clay Minerals</span>
+                    <span class="layer-desc">Kaolinite & Hydrothermal Alteration</span>
+                </div>
+
+                <!-- 5. Gossan Zone -->
+                <div class="layer-card" data-layer="gossan_zone" data-category="mineral">
+                    <div class="layer-thumb gossan-thumb">
+                        <div class="thumb-badge">SWIR/NIR</div>
+                    </div>
+                    <span class="layer-name">Gossan Zone</span>
+                    <span class="layer-desc">Weathered Sulfide Enrichment Cap</span>
+                </div>
+
+                <!-- 6. reNDVI -->
+                <div class="layer-card" data-layer="rendvi" data-category="env">
+                    <div class="layer-thumb rendvi-thumb">
+                        <div class="thumb-badge">Red Edge</div>
+                    </div>
+                    <span class="layer-name">reNDVI Biomass</span>
+                    <span class="layer-desc">Environmental Degradation Monitor</span>
+                </div>
+
+                <!-- 7. WRI Flooded Pit -->
+                <div class="layer-card" data-layer="wri" data-category="env">
+                    <div class="layer-thumb wri-thumb">
+                        <div class="thumb-badge">Flooded Pit</div>
+                    </div>
+                    <span class="layer-name">Flooded Pits (WRI)</span>
+                    <span class="layer-desc">Water Ratio Index / Tailings Dams</span>
+                </div>
+
+                <!-- 8. Geological Lineaments -->
+                <div class="layer-card" data-layer="lineaments" data-category="struct">
+                    <div class="layer-thumb lineaments-thumb">
+                        <div class="thumb-badge">Canny Edge</div>
+                    </div>
+                    <span class="layer-name">Lineaments</span>
+                    <span class="layer-desc">Fault Lines & Shear Zones</span>
+                </div>
+            </div>
+
+            <!-- Active Layer Control Panel -->
+            <div class="active-layer-settings">
+                <h4>Layer Opacity & Blending</h4>
+                <div class="opacity-slider-row">
+                    <label>Layer Opacity</label>
+                    <input type="range" id="layer-opacity" min="10" max="100" value="80">
+                    <span id="opacity-val">80%</span>
+                </div>
+                <div class="formula-box" id="layer-formula-display">
+                    <strong>Formula:</strong> <span>B4 / B2 (Red / Blue)</span>
+                </div>
+            </div>
+
+            <!-- Remote Sensing Sub-Tool 1: Field Specimen Optical Camera -->
+            <div class="rs-tool-card" id="rs-camera-card">
+                <div class="rs-tool-header">
+                    <div class="rs-tool-title">
+                        <i data-lucide="camera" style="color:#10b981; width:15px; height:15px;"></i>
+                        <span>FIELD SPECIMEN OPTICAL CAMERA</span>
+                    </div>
+                    <span class="rs-pill rs-pill-green">
+                        <span class="pulse-dot-green"></span> Live Lens
+                    </span>
+                </div>
+                <p class="rs-tool-desc">
+                    Open device camera to capture field rock specimens, core drillings, or gossan outcrops for real-time spectral index estimation & mineral classification.
+                </p>
+                <div class="rs-tool-actions">
+                    <button class="rs-action-btn primary" id="btn-open-camera" type="button">
+                        <i data-lucide="camera"></i>
+                        <span>Open Field Camera</span>
+                    </button>
+                    <label class="rs-action-btn secondary" title="Upload rock photo from files" style="cursor:pointer;">
+                        <i data-lucide="upload"></i>
+                        <span>Upload Photo</span>
+                        <input type="file" id="camera-file-input" accept="image/*" style="display:none;">
+                    </label>
+                </div>
+                <!-- Captured specimen preview chip -->
+                <div id="rs-recent-specimen" class="rs-specimen-chip hidden">
+                    <img id="rs-specimen-thumb" class="rs-specimen-thumb" alt="Specimen">
+                    <div class="rs-specimen-info">
+                        <div class="rs-specimen-name" id="rs-specimen-name">Iron Gossan (Hematite)</div>
+                        <div class="rs-specimen-meta" id="rs-specimen-meta">Confidence: 91.4% • R/B: 2.83</div>
+                    </div>
+                    <button class="rs-specimen-view-btn" id="btn-view-specimen" type="button" title="View Full Spectral Card">
+                        <i data-lucide="external-link" style="width:13px; height:13px;"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Remote Sensing Sub-Tool 2: Google Earth Engine (GEE) Connection & Pop-up -->
+            <div class="rs-tool-card rs-gee-card" id="rs-gee-card">
+                <div class="rs-tool-header">
+                    <div class="rs-tool-title">
+                        <i data-lucide="globe" style="color:#38bdf8; width:15px; height:15px;"></i>
+                        <span>GOOGLE EARTH ENGINE (GEE)</span>
+                    </div>
+                    <span class="rs-pill rs-pill-blue">
+                        <span class="pulse-dot-blue"></span> Cloud Ready
+                    </span>
+                </div>
+                <p class="rs-tool-desc">
+                    Scale petabyte satellite analytics & multi-temporal Sentinel-2 / Landsat-9 cloud processing for Zimbabwean mining cadastre and alteration belts.
+                </p>
+                <div class="rs-gee-target-box">
+                    <div class="rs-gee-target-label">GEE App Status:</div>
+                    <div class="rs-gee-target-url" id="gee-current-app-name">Zimbabwe Earth Engine Mineral App (NMIH Core)</div>
+                </div>
+                <div class="rs-tool-actions">
+                    <button class="rs-action-btn gee-btn" id="btn-open-gee-modal" type="button">
+                        <i data-lucide="satellite"></i>
+                        <span>Pop-Up GEE App</span>
+                    </button>
+                    <button class="rs-action-btn secondary" id="btn-config-gee-url" type="button" title="Configure custom GEE App URL">
+                        <i data-lucide="settings-2"></i>
+                        <span>App Config</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 3: Commodity Market & Trading (hidden by default) -->
+        <div class="panel-content hidden" id="panel-market">
+            <div class="market-currency-toggle">
+                <span class="currency-label">Pricing Base:</span>
+                <div class="currency-pill active" id="curr-usd">USD ($)</div>
+                <div class="currency-pill" id="curr-zig">ZiG (Official)</div>
+            </div>
+
+            <div class="market-list" id="market-list">
+                <!-- Dynamically loaded commodities from market_service -->
+                <div class="loading-state">
+                    <i data-lucide="loader-2" class="spin-icon"></i>
+                    <span>Connecting to real-time commodity tickers...</span>
+                </div>
+            </div>
+
+            <div class="market-notice-card">
+                <i data-lucide="shield-alert" style="width:16px;height:16px;color:var(--text-accent)"></i>
+                <div class="notice-text">
+                    <strong>Fidelity Gold Refinery Benchmark</strong>
+                    <p>Artisanal gold purchases strictly adhere to the Reserve Bank of Zimbabwe (RBZ) spot index with 0% withholding tax for registered syndicates.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 4: Unified MTNSPEC Change It™ + EcoCash Wallet & Digital Permits -->
+        <div class="panel-content hidden" id="panel-wallet">
+            <!-- MTNSPEC Corporate Unified FinTech Header -->
+            <div class="fintech-unified-banner" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(16, 185, 129, 0.15)); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="mtnspec_logo.png" alt="MTNSPEC" style="height:28px; width:auto; border-radius:4px;">
+                    <div>
+                        <div style="font-size:11.5px; font-weight:800; color:#fff; letter-spacing:0.04em;">MTNSPEC CHANGE IT™ + ECOCASH</div>
+                        <div style="font-size:10px; color:#94a3b8;">Unified Sovereign Mining Settlement Rails (mtnspec.co.zw)</div>
+                    </div>
+                </div>
+                <a href="https://mtnspec.co.zw/#changeit" target="_blank" rel="noopener noreferrer" style="font-size:10px; font-weight:700; color:#38bdf8; text-decoration:none; padding:3px 8px; border-radius:4px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); white-space:nowrap;">
+                    Change It Portal ↗
+                </a>
+            </div>
+
+            <!-- Total Combined Liquidity Card -->
+            <div class="wallet-card" style="margin-bottom:14px;">
+                <div class="wallet-header">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <i data-lucide="layers" style="width:16px; height:16px; color:var(--text-accent);"></i>
+                        <span class="wallet-type" style="font-weight:700; color:#fff;">Total Mining Liquidity (Dual Rails)</span>
+                    </div>
+                    <span class="wallet-status" style="background:rgba(56,189,248,0.15); color:#38bdf8;">LIVE SOVEREIGN ESCROW</span>
+                </div>
+                <div class="wallet-balance-row">
+                    <span class="balance-curr">$</span>
+                    <span class="balance-amount" id="wallet-balance-total-usd">230.50</span>
+                    <span class="balance-sub" id="wallet-balance-total-zig">~ 6,188.93 ZiG (RBZ Asset-Backed)</span>
+                </div>
+
+                <!-- Dual Balances Breakdown Grid -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08);">
+                    <!-- 1. MTNSPEC Change It -->
+                    <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:10px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                            <span style="font-size:10px; font-weight:800; color:#10b981;">MTNSPEC CHANGE IT™</span>
+                            <span style="font-size:8px; background:rgba(16,185,129,0.2); color:#34d399; padding:1px 4px; border-radius:3px;">&lt;200ms P2P</span>
+                        </div>
+                        <div style="font-size:16px; font-weight:800; color:#fff;" id="wallet-balance-changeit-usd">$85.50</div>
+                        <div style="font-size:9.5px; color:#94a3b8;" id="wallet-balance-changeit-zig">2,295.68 ZiG • 0% ASM Fee</div>
+                    </div>
+
+                    <!-- 2. EcoCash Mobile USSD -->
+                    <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:10px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                            <span style="font-size:10px; font-weight:800; color:#60a5fa;">ECOCASH USSD</span>
+                            <span style="font-size:8px; background:rgba(59,130,246,0.2); color:#93c5fd; padding:1px 4px; border-radius:3px;">Econet Direct</span>
+                        </div>
+                        <div style="font-size:16px; font-weight:800; color:#fff;" id="wallet-balance-usd">$145.00</div>
+                        <div style="font-size:9.5px; color:#94a3b8;" id="wallet-balance-zig">3,893.25 ZiG • Cashout Escrow</div>
+                    </div>
+                </div>
+
+                <div class="wallet-actions" style="margin-top:14px;">
+                    <button class="wallet-act-btn" id="btn-open-transfer" type="button" style="background:linear-gradient(135deg, rgba(16,185,129,0.25), rgba(56,189,248,0.2)); border-color:rgba(16,185,129,0.5);">
+                        <i data-lucide="send" style="width:14px;height:14px;color:#34d399;"></i>
+                        <span>Instant P2P Transfer</span>
+                    </button>
+                    <button class="wallet-act-btn" id="btn-open-permit-gen" type="button">
+                        <i data-lucide="file-check" style="width:14px;height:14px;color:var(--text-accent);"></i>
+                        <span>Generate Ore Pass</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Interactive P2P Transfer Box (MTNSPEC Change It / EcoCash) -->
+            <div class="permit-generator-box" id="p2p-transfer-box" style="margin-bottom:14px;">
+                <h3 class="box-title">
+                    <i data-lucide="arrow-left-right" style="width:16px;height:16px;color:#10b981"></i>
+                    Send Money / Instant Ore Lot Settlement
+                </h3>
+                
+                <!-- Rail Picker -->
+                <div style="display:flex; gap:8px; margin-bottom:12px;">
+                    <button type="button" class="layer-tab active" id="btn-rail-changeit" style="flex:1; border:1px solid rgba(16,185,129,0.4); background:rgba(16,185,129,0.15); color:#fff; display:flex; align-items:center; justify-content:center; gap:5px;">
+                        <i data-lucide="zap" style="width:12px;height:12px;color:#10b981;"></i> MTNSPEC Change It™
+                    </button>
+                    <button type="button" class="layer-tab" id="btn-rail-ecocash" style="flex:1; border:1px solid rgba(59,130,246,0.3); background:rgba(59,130,246,0.08); color:var(--text-muted); display:flex; align-items:center; justify-content:center; gap:5px;">
+                        <i data-lucide="phone" style="width:12px;height:12px;color:#60a5fa;"></i> EcoCash USSD
+                    </button>
+                </div>
+
+                <div class="permit-form">
+                    <div class="form-row">
+                        <label>Recipient Phone Number (Econet / NetOne / Telecel)</label>
+                        <input type="text" id="transfer-phone" class="form-input" placeholder="+263 77 977 0395 (Miner / Syndicate)">
+                    </div>
+                    <div class="form-row split">
+                        <div>
+                            <label>Amount (USD $)</label>
+                            <input type="number" id="transfer-amount" class="form-input" value="15.00" step="1.0" min="1.0">
+                        </div>
+                        <div>
+                            <label>Quick Preset</label>
+                            <div style="display:flex; gap:4px; margin-top:2px;">
+                                <button type="button" class="btn-preset-amt" data-amt="5" style="flex:1; padding:6px 2px; font-size:10px; font-weight:700; background:rgba(255,255,255,0.08); border:1px solid var(--border-color); color:#fff; border-radius:4px; cursor:pointer;">+$5</button>
+                                <button type="button" class="btn-preset-amt" data-amt="10" style="flex:1; padding:6px 2px; font-size:10px; font-weight:700; background:rgba(255,255,255,0.08); border:1px solid var(--border-color); color:#fff; border-radius:4px; cursor:pointer;">+$10</button>
+                                <button type="button" class="btn-preset-amt" data-amt="25" style="flex:1; padding:6px 2px; font-size:10px; font-weight:700; background:rgba(255,255,255,0.08); border:1px solid var(--border-color); color:#fff; border-radius:4px; cursor:pointer;">+$25</button>
+                                <button type="button" class="btn-preset-amt" data-amt="50" style="flex:1; padding:6px 2px; font-size:10px; font-weight:700; background:rgba(255,255,255,0.08); border:1px solid var(--border-color); color:#fff; border-radius:4px; cursor:pointer;">+$50</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label>Settlement Note / Concession Reference</label>
+                        <input type="text" id="transfer-note" class="form-input" value="Kadoma Gold Corridor Ore Batch #48">
+                    </div>
+                    <button class="btn-primary" id="btn-submit-transfer" type="button" style="width:100%; margin-top:4px; background:linear-gradient(135deg, #10b981, #059669); color:#fff;">
+                        <i data-lucide="shield-check" style="width:15px;height:15px;"></i>
+                        <span>Execute Instant Transfer</span>
+                    </button>
+                </div>
+
+                <!-- Transfer Result Toast / Card -->
+                <div id="transfer-result-card" class="permit-result-card hidden" style="margin-top:12px; background:rgba(16,185,129,0.1); border-color:#10b981;">
+                    <div class="permit-card-header">
+                        <span class="permit-badge" style="background:#10b981; color:#000;">SETTLEMENT SUCCESSFUL</span>
+                        <span class="permit-id-text" id="res-transfer-txid">CHG-98412</span>
+                    </div>
+                    <div style="font-size:11.5px; color:#fff; padding:10px 0; line-height:1.4;" id="res-transfer-msg">
+                        Payment dispatched via MTNSPEC Change It™ Sovereign Rails.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instant Permit Generator Section -->
+            <div class="permit-generator-box" id="permit-generator-box" style="margin-bottom:14px;">
+                <h3 class="box-title">
+                    <i data-lucide="qr-code" style="width:16px;height:16px;color:var(--text-accent)"></i>
+                    Issue Digital Ore Transit Permit (MTNSPEC Cadastre)
+                </h3>
+                <div class="permit-form">
+                    <div class="form-row">
+                        <label>Target Concession</label>
+                        <select id="permit-concession" class="form-input">
+                            <option value="ZIM-GD-001">Selukwe Chrome Concession</option>
+                            <option value="ZIM-GB-003">Kadoma Central Gold Corridor</option>
+                            <option value="ZIM-BIK-004">Bikita Pegmatite Lithium Zone</option>
+                            <option value="ZIM-GD-002">Hartley Complex PGM Block</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Carrier / Vehicle Reg</label>
+                        <input type="text" id="permit-vehicle" class="form-input" placeholder="e.g. AFG-9481 (Scania 30t)">
+                    </div>
+                    <div class="form-row split">
+                        <div>
+                            <label>Tonnage</label>
+                            <input type="number" id="permit-tonnage" class="form-input" value="30.0" step="0.5">
+                        </div>
+                        <div>
+                            <label>Destination</label>
+                            <input type="text" id="permit-dest" class="form-input" value="Kwekwe Roaster / Gweru">
+                        </div>
+                    </div>
+                    <button class="btn-primary" id="btn-generate-permit" style="width:100%;margin-top:8px;">
+                        <i data-lucide="shield-check" style="width:16px;height:16px;"></i>
+                        Generate Authenticated QR Pass
+                    </button>
+                </div>
+
+                <!-- Permit QR Result Display -->
+                <div id="permit-result-card" class="permit-result-card hidden">
+                    <div class="permit-card-header">
+                        <span class="permit-badge">OFFICIALLY ISSUED</span>
+                        <span class="permit-id-text" id="res-permit-id">PRM-98310</span>
+                    </div>
+                    <div class="permit-qr-img-wrapper">
+                        <img id="res-permit-qr" alt="Transit Permit QR">
+                    </div>
+                    <div class="permit-meta-info" id="res-permit-meta"></div>
+                    <div style="font-size:9.5px; color:#38bdf8; text-align:center; margin-bottom:8px;">
+                        Verified by MTNSPEC Digital Cadastre • https://mining.mtnspec.co.zw
+                    </div>
+                    <button class="btn-secondary" id="btn-print-permit" style="width:100%;">
+                        <i data-lucide="printer" style="width:14px;height:14px;"></i>
+                        Print Verification Pass
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Ledger Transactions -->
+            <div class="ledger-box">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                    <h4 class="ledger-title" style="margin-bottom:0;">Settlement Ledger (Dual Rails)</h4>
+                    <span style="font-size:9.5px; color:#94a3b8;">MTNSPEC &amp; EcoCash</span>
+                </div>
+                <div class="ledger-list" id="ledger-list">
+                    <!-- Dynamic transactions populated by app.js -->
+                </div>
+            </div>
+
+            <!-- Footer Portal Link -->
+            <div style="margin-top:16px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; text-align:center; font-size:10px; color:#64748b;">
+                Powered by <a href="https://mtnspec.co.zw" target="_blank" rel="noopener noreferrer" style="color:#38bdf8; text-decoration:none; font-weight:700;">MTNSPEC (Mhandu Technologies &amp; Network Specialties)</a>. All rights reserved.
+            </div>
+        </div>
+
+        <!-- Panel 5: Career & Skills Hub (Akello / GigEngine) -->
+        <div class="panel-content hidden" id="panel-skills">
+            <h3 class="box-title">
+                <i data-lucide="briefcase" style="width:16px;height:16px;color:var(--text-accent)"></i>
+                Ground-Truth Field Gigs (Earn EcoCash)
+            </h3>
+            <p class="panel-desc">Verify Sentinel-2 satellite spectral anomalies in the field and earn instant EcoCash bounties.</p>
+            
+            <div class="gigs-list" id="gigs-list">
+                <!-- Dynamic gigs from gig_engine -->
+            </div>
+
+            <h3 class="box-title" style="margin-top: 24px;">
+                <i data-lucide="graduation-cap" style="width:16px;height:16px;color:#3b82f6"></i>
+                Akello LMS Mining Certifications
+            </h3>
+            <div class="courses-list" id="courses-list">
+                <!-- Dynamic courses from akello_service -->
+            </div>
+        </div>
+
+        <!-- Panel 6: Mentorship & Talent Network (Module 3) -->
+        <div class="panel-content hidden" id="panel-mentorship">
+            <div class="mentorship-subnav">
+                <button class="mentorship-subtab active" data-subtab="mentors">Senior Mentors</button>
+                <button class="mentorship-subtab" data-subtab="talent">Verified Talent Pool</button>
+                <button class="mentorship-subtab" data-subtab="bookings">My Bookings</button>
+            </div>
+
+            <!-- Subtab 1: Senior Industry Mentors -->
+            <div class="mentorship-subview" id="subview-mentors">
+                <div class="mentorship-banner">
+                    <div class="banner-title"><i data-lucide="award" style="width:14px;height:14px;color:#38bdf8;"></i> Zimbabwe Innovation Mentorship 2026</div>
+                    <div class="banner-desc">Connect directly with Fellows of the Geological Society of Zimbabwe, UZ Metallurgists, and veteran Mine Managers. Sessions are free and subsidized for Zimbabwean mining youth.</div>
+                </div>
+                <div class="mentors-list" id="mentors-list">
+                    <!-- Populated dynamically from /api/mentorship/mentors -->
+                    <div class="loading-state">
+                        <i data-lucide="loader-2" class="spin-icon"></i>
+                        <span>Loading verified mining advisors...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subtab 2: Verified Talent & Graduate Directory -->
+            <div class="mentorship-subview hidden" id="subview-talent">
+                <div class="mentorship-banner" style="border-left-color: #10b981;">
+                    <div class="banner-title"><i data-lucide="sparkles" style="width:14px;height:14px;color:#10b981;"></i> Zimbabwe Mining & Geomatics Talent</div>
+                    <div class="banner-desc">Top graduates and technical apprentices from UZ, NUST, and MSU. Available for concession attachments, drone flights, and field sampling.</div>
+                </div>
+                <div class="talent-list" id="talent-list">
+                    <!-- Populated dynamically from /api/mentorship/talent -->
+                </div>
+            </div>
+
+            <!-- Subtab 3: Advisory Bookings -->
+            <div class="mentorship-subview hidden" id="subview-bookings">
+                <div class="bookings-list" id="mentor-bookings-list">
+                    <!-- Populated dynamically from /api/mentorship/bookings -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 7: Alerts & Environmental Compliance -->
+        <div class="panel-content hidden" id="panel-alerts">
+            <h3 class="box-title">
+                <i data-lucide="alert-triangle" style="width:16px;height:16px;color:#ef4444"></i>
+                Environmental & Compliance Flags
+            </h3>
+            <div class="alerts-list" id="alerts-list">
+                <div class="alert-item severe">
+                    <div class="alert-icon-col"><i data-lucide="flame" style="color:#ef4444"></i></div>
+                    <div class="alert-details">
+                        <span class="alert-title">High Tailings Dam Overflow Risk (WRI Anomaly)</span>
+                        <span class="alert-concession">Gwanda Greenstone Belt Claims (MC-GWA-2023-7721)</span>
+                        <span class="alert-time">2 hours ago • Automated Sentinel-2 Alert</span>
+                    </div>
+                </div>
+                <div class="alert-item warning">
+                    <div class="alert-icon-col"><i data-lucide="alert-circle" style="color:#f59e0b"></i></div>
+                    <div class="alert-details">
+                        <span class="alert-title">Vegetation Degradation Beyond Permitted Buffer</span>
+                        <span class="alert-concession">Kadoma Central Gold Corridor (MC-KAD-2025-0451)</span>
+                        <span class="alert-time">Yesterday • reNDVI Biomass Loss -28%</span>
+                    </div>
+                </div>
+                <div class="alert-item ok">
+                    <div class="alert-icon-col"><i data-lucide="check-circle" style="color:#10b981"></i></div>
+                    <div class="alert-details">
+                        <span class="alert-title">Selukwe Chrome Concession Fully Compliant</span>
+                        <span class="alert-concession">Shurugwi District • Verified by ZMDC Inspector</span>
+                        <span class="alert-time">3 days ago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===== SYSTEM ARCHITECTURE MODAL (Privy Style) ===== -->
+    <div id="arch-modal" class="arch-modal hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title-col">
+                    <div class="modal-badge">ZIMBABWE MINERAL INTELLIGENCE — INNOVATION SPECIFICATION</div>
+                    <h2 class="modal-title">The National Mineral Intelligence Hub Architecture</h2>
+                </div>
+                <button class="modal-close" id="arch-modal-close">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <!-- Modal Navigation Tabs -->
+            <div class="modal-tabs">
+                <button class="modal-tab-btn active" data-tab="arch-overview">System Overview</button>
+                <button class="modal-tab-btn" data-tab="arch-artwork">Artwork & Branding</button>
+                <button class="modal-tab-btn" data-tab="arch-spectral">Spectral Band Math</button>
+                <button class="modal-tab-btn" data-tab="arch-pipeline">GEE Data Pipeline</button>
+                <button class="modal-tab-btn" data-tab="arch-api">REST API Endpoints</button>
+            </div>
+
+            <!-- Modal Tab 1: Overview -->
+            <div class="modal-tab-content" id="tab-arch-overview">
+                <div class="arch-grid">
+                    <div class="arch-box">
+                        <div class="arch-box-icon"><i data-lucide="satellite" style="color:#60a5fa"></i></div>
+                        <h3>1. Earth Observation Layer</h3>
+                        <p>Copernicus Sentinel-2 Level-2A imagery ingested via Google Earth Engine. Real-time atmospheric correction (Sen2Cor) providing 10m/20m spatial resolution across all 6 Zimbabwean mining provinces.</p>
+                    </div>
+                    <div class="arch-box">
+                        <div class="arch-box-icon"><i data-lucide="cpu" style="color:#f59e0b"></i></div>
+                        <h3>2. Hybrid Geospatial Engine</h3>
+                        <p>FastAPI backend running band ratio algorithms (Iron Oxide B4/B2, Clay B11/B12, Ferrous Iron, Gossan) combined with structural lineament detection via Canny filtering on SWIR1 bands.</p>
+                    </div>
+                    <div class="arch-box">
+                        <div class="arch-box-icon"><i data-lucide="wallet" style="color:#10b981"></i></div>
+                        <h3>3. Financial & Registry Layer</h3>
+                        <p>Integration with EcoCash USSD gateway, digital ore transit permits with encrypted QR validation, and Akello-powered artisan training modules for formalization.</p>
+                    </div>
+                </div>
+
+                <div class="spec-highlight-card">
+                    <h4>Why Moving Away from Streamlit Was Necessary:</h4>
+                    <ul>
+                        <li><strong>Instant Vector & Raster Layer Switching:</strong> Leaflet renders GPU-accelerated map tiles without page reloads.</li>
+                        <li><strong>High Concurrency:</strong> FastAPI and Uvicorn handle thousands of field inspector requests without Python session bottlenecks.</li>
+                        <li><strong>Zero Cold Starts:</strong> Clean decoupled REST endpoints allow caching and offline PWA capability in remote bush locations.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Modal Tab 2: Spectral Band Math -->
+            <div class="modal-tab-content hidden" id="tab-arch-spectral">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Index Name</th>
+                            <th>Mathematical Formulation</th>
+                            <th>Sentinel-2 Bands</th>
+                            <th>Geological Target</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Iron Oxide</strong></td>
+                            <td><code>B4 / B2</code></td>
+                            <td>Red (665 nm) / Blue (490 nm)</td>
+                            <td>Hematite, Goethite, Limonite gossan caps</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ferrous Iron</strong></td>
+                            <td><code>(B12 / B8) + (B3 / B4)</code></td>
+                            <td>SWIR2 / NIR + Green / Red</td>
+                            <td>Ultramafic intrusive complexes & chromite</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Clay Minerals</strong></td>
+                            <td><code>B11 / B12</code></td>
+                            <td>SWIR1 (1610 nm) / SWIR2 (2190 nm)</td>
+                            <td>Hydrothermal alteration (Kaolinite, Alunite)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Gossan Zone</strong></td>
+                            <td><code>B11 / B8A</code></td>
+                            <td>SWIR1 / Narrow NIR</td>
+                            <td>Supergene sulfide enrichment caps</td>
+                        </tr>
+                        <tr>
+                            <td><strong>WRI (Water Ratio)</strong></td>
+                            <td><code>(B5 + B6) / (B11 + B12)</code></td>
+                            <td>Red Edge / SWIR</td>
+                            <td>Flooded artisanal pits & tailings dams</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Modal Tab 3: GEE Data Pipeline -->
+            <div class="modal-tab-content hidden" id="tab-arch-pipeline">
+                <div class="pipeline-flow">
+                    <div class="pipeline-step">
+                        <span class="step-num">1</span>
+                        <h4>Copernicus Constellation</h4>
+                        <p>Sentinel-2A/B optical multispectral passes over Zimbabwe every 5 days.</p>
+                    </div>
+                    <div class="pipeline-arrow"><i data-lucide="arrow-right"></i></div>
+                    <div class="pipeline-step">
+                        <span class="step-num">2</span>
+                        <h4>GEE Masking & Cloud Filter</h4>
+                        <p>Filtering cloudy pixels (< 15%) and applying topographic solar normalization.</p>
+                    </div>
+                    <div class="pipeline-arrow"><i data-lucide="arrow-right"></i></div>
+                    <div class="pipeline-step">
+                        <span class="step-num">3</span>
+                        <h4>Spectral Band Math</h4>
+                        <p>Calculating alteration matrices and clipping to mining concession vector polygons.</p>
+                    </div>
+                    <div class="pipeline-arrow"><i data-lucide="arrow-right"></i></div>
+                    <div class="pipeline-step">
+                        <span class="step-num">4</span>
+                        <h4>FastAPI Tile Server</h4>
+                        <p>Serving transparent PNG tiles and vector GeoJSON to the Leaflet dashboard.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Tab 4: REST API -->
+            <div class="modal-tab-content hidden" id="tab-arch-api">
+                <div class="api-endpoints-list">
+                    <div class="api-row"><span class="badge get">GET</span> <code>/api/concessions</code> — All monitored mining concessions, bounds, compliance</div>
+                    <div class="api-row"><span class="badge get">GET</span> <code>/api/minerals/indices</code> — Spectral formulas, gradients, band metadata</div>
+                    <div class="api-row"><span class="badge get">GET</span> <code>/api/market/prices</code> — Real-time commodity market intelligence</div>
+                    <div class="api-row"><span class="badge get">GET</span> <code>/api/ecocash/wallet</code> — Balance and ledger transaction logs</div>
+                    <div class="api-row"><span class="badge post">POST</span> <code>/api/permits/generate</code> — Dynamic QR mineral transit passes</div>
+                    <div class="api-row"><span class="badge post">POST</span> <code>/api/auth/login</code> — Role-based token authentication</div>
+                </div>
+                <div style="margin-top:16px;">
+                    <a href="/docs" target="_blank" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;">
+                        <i data-lucide="external-link" style="width:14px;height:14px;"></i>
+                        Open Interactive Swagger Documentation (/docs)
+                    </a>
+                </div>
+            </div>
+
+            <!-- Modal Tab 5: Artwork & Branding Showcase -->
+            <div class="modal-tab-content hidden" id="tab-arch-artwork">
+                <div class="artwork-showcase-container">
+                    <!-- Duo Grid: The Two Flagship Systems -->
+                    <div class="artwork-duo-grid">
+                        <!-- Flagship 1: The National Mineral Intelligence Hub -->
+                        <div class="artwork-card">
+                            <div class="artwork-media-wrap">
+                                <img src="/assets/cover_page.png" alt="Mineral Intelligence Hub Official Artwork">
+                            </div>
+                            <div class="artwork-card-body">
+                                <span class="artwork-flagship-tag">FLAGSHIP SOLUTION 1 (SMART MINING)</span>
+                                <h3 class="artwork-title">The National Mineral Intelligence Hub</h3>
+                                <p class="artwork-desc">
+                                    AI-powered Earth Observation and mineral prospecting system for Zimbabwe. Employs Sentinel-2 L2A multispectral band math to identify gossans, iron oxides, and hydrothermal alteration halos.
+                                </p>
+                                <div class="artwork-tags">
+                                    <span class="art-tag">Copernicus Sentinel-2</span>
+                                    <span class="art-tag">Great Dyke & Archaean Belts</span>
+                                    <span class="art-tag">EcoCash Transit QR</span>
+                                    <span class="art-tag">Zimbabwe 2026</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Flagship 2: AgriShield (Terra Drought) -->
+                        <div class="artwork-card agri">
+                            <div class="artwork-media-wrap contain">
+                                <img src="/privy-assets/agri_shield_logo.png" alt="AgriShield Official Emblem">
+                            </div>
+                            <div class="artwork-card-body">
+                                <span class="artwork-flagship-tag agri">FLAGSHIP SOLUTION 2 (CLIMATE & AGRITECH)</span>
+                                <h3 class="artwork-title">AgriShield (Terra Drought)</h3>
+                                <p class="artwork-desc">
+                                    AI-driven agricultural drought forecasting and resilience platform. Integrates longitudinal 2000–2025 satellite datasets (FLDAS SMI, CHIRPS SPI, MODIS/Sentinel-2 VCI) for early warning in Binga District.
+                                </p>
+                                <div class="artwork-tags">
+                                    <span class="art-tag">Live on Render</span>
+                                    <span class="art-tag">Random Forest AI</span>
+                                    <span class="art-tag">Binga 2000–2025 ML</span>
+                                    <span class="art-tag">Food Security</span>
+                                </div>
+                                <div style="margin-top:auto;">
+                                    <a href="https://agrishield-1-j2tg.onrender.com/" target="_blank" class="btn-secondary" style="display:inline-flex;align-items:center;gap:6px;width:100%;justify-content:center;font-size:11px;padding:8px;">
+                                        <i data-lucide="external-link" style="width:12px;height:12px;"></i>
+                                        View Live AgriShield Deployment
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lead Innovator Profile -->
+                    <div class="innovator-card">
+                        <img src="/assets/user_profile.jpg" alt="Takunda Nigel Mhandu" class="innovator-photo">
+                        <div class="innovator-meta">
+                            <h4>Takunda Nigel Mhandu — Lead Innovator & Systems Architect</h4>
+                            <p>
+                                Recent graduate with a <strong>BSc (Hons) in GIS & Remote Sensing</strong> from the <strong>National University of Science and Technology (NUST, Bulawayo)</strong>. Specializing in applied machine learning, deep learning computer vision on multispectral earth observation, and planetary computing with Google Earth Engine.
+                            </p>
+                            <div class="innovator-credentials">
+                                <i data-lucide="check-circle" style="width:14px;height:14px;color:#10b981;"></i>
+                                <span>Theme: Harnessing Local Innovation for Inclusive Development — Zimbabwe 2026</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Official PDF Downloads & Artifacts -->
+                    <div class="artwork-downloads-bar">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <i data-lucide="file-text" style="width:20px;height:20px;color:var(--text-accent);"></i>
+                            <div>
+                                <strong style="font-size:13px;color:#fff;">Official Exhibition Documents</strong>
+                                <div style="font-size:11px;color:var(--text-secondary);">Comprehensive 2-page Artwork Showcase & 8-page Technical Specification</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:10px;">
+                            <a href="/assets/Team_and_Organization_Artwork_Showcase_POTRAZ_2026.pdf" target="_blank" class="btn-primary" style="font-size:11px;padding:8px 12px;display:inline-flex;align-items:center;gap:6px;">
+                                <i data-lucide="download" style="width:13px;height:13px;"></i>
+                                Download Artwork Showcase PDF
+                            </a>
+                            <a href="/assets/The_National_Mineral_Intelligence_Hub_Specification_POTRAZ_2026_Final.pdf" target="_blank" class="btn-secondary" style="font-size:11px;padding:8px 12px;display:inline-flex;align-items:center;gap:6px;">
+                                <i data-lucide="file-check" style="width:13px;height:13px;"></i>
+                                Download Specification PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FINANCIAL MARKET INTELLIGENCE MODAL (CNBC / BLOOMBERG TERMINAL) ===== -->
+    <div id="market-modal" class="arch-modal hidden">
+        <div class="modal-card market-modal-card">
+            <div class="modal-header">
+                <div class="modal-title-col">
+                    <div class="modal-badge" id="mm-badge" style="display:inline-flex;align-items:center;gap:6px;">
+                        <span class="cnbc-pulse-dot"></span>
+                        <span id="mm-exchange-badge">COMEX METALS EXCHANGE</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;margin-top:2px;">
+                        <h2 class="modal-title" id="mm-title">Gold (Au) Spot Intelligence</h2>
+                        <span class="symbol-pill" id="mm-symbol">GC</span>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <button class="modal-close" id="market-modal-close" title="Close Market Detail">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-tab-content market-modal-body">
+                <!-- Top Price Banner & Real-time Rate -->
+                <div class="market-hero-banner">
+                    <div class="market-hero-left">
+                        <div class="market-price-large" id="mm-price">$2,894.20</div>
+                        <div class="market-hero-sub">
+                            <span class="market-unit-tag" id="mm-unit">per Troy Ounce (USD)</span>
+                            <span class="market-chg-badge up" id="mm-change-badge">▲ +1.42%</span>
+                            <span class="market-time-tag">Live 24h Session</span>
+                        </div>
+                    </div>
+                    <div class="market-hero-actions">
+                        <a href="https://www.cnbc.com/market-movers-commodities/" target="_blank" id="mm-btn-cnbc" class="market-ext-link cnbc-btn" title="Open live quote on CNBC Market Movers">
+                            <i data-lucide="trending-up" style="width:14px;height:14px;"></i>
+                            <span>View on CNBC ↗</span>
+                        </a>
+                        <a href="https://www.tradingview.com/" target="_blank" id="mm-btn-tradingview" class="market-ext-link tv-btn" title="Open live technical chart on TradingView">
+                            <i data-lucide="line-chart" style="width:14px;height:14px;"></i>
+                            <span>TradingView Chart ↗</span>
+                        </a>
+                        <a href="https://www.lme.com/" target="_blank" id="mm-btn-exchange" class="market-ext-link exch-btn" title="Open official clearinghouse contract or RBZ benchmark">
+                            <i data-lucide="external-link" style="width:14px;height:14px;"></i>
+                            <span id="mm-exch-btn-text">Primary Exchange ↗</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Interactive SVG Price Trend Visualizer -->
+                <div class="market-chart-card">
+                    <div class="market-chart-header">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <i data-lucide="activity" style="width:14px;height:14px;color:var(--text-accent);"></i>
+                            <span style="font-size:12px;font-weight:700;color:#fff;">5-Session Intraday / Benchmark Trajectory</span>
+                        </div>
+                        <div class="market-chart-range" id="mm-chart-range">High: $2,912.40 | Low: $2,878.50</div>
+                    </div>
+                    <div class="market-chart-svg-wrap" id="mm-chart-svg-wrap">
+                        <!-- Dynamic SVG line with gradient glow rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- 4-Stat Financial Intelligence Grid -->
+                <div class="market-stats-grid">
+                    <div class="mstat-box">
+                        <span class="mstat-lbl">24H Trading Range</span>
+                        <span class="mstat-val" id="mm-day-range">$2,878.50 – $2,912.40</span>
+                        <span class="mstat-sub">Session min / max quote</span>
+                    </div>
+                    <div class="mstat-box">
+                        <span class="mstat-lbl">52-Week Range</span>
+                        <span class="mstat-val" id="mm-year-range">$2,030.00 – $2,925.00</span>
+                        <span class="mstat-sub">Annual historical bandwidth</span>
+                    </div>
+                    <div class="mstat-box">
+                        <span class="mstat-lbl">Statutory Mineral Royalty</span>
+                        <span class="mstat-val highlight" id="mm-royalty">5.0% (RBZ / ZIMRA)</span>
+                        <span class="mstat-sub">Zimbabwe sovereign fiscal rate</span>
+                    </div>
+                    <div class="mstat-box">
+                        <span class="mstat-lbl">Clearinghouse & Pricing Source</span>
+                        <span class="mstat-val" id="mm-clearinghouse">COMEX (CME Group)</span>
+                        <span class="mstat-sub">International futures benchmark</span>
+                    </div>
+                </div>
+
+                <!-- Zimbabwe Sovereign Backing & Domestic Mineral Corridor Relevance -->
+                <div class="market-zim-card">
+                    <div class="zim-card-header">
+                        <div class="zim-card-icon">
+                            <i data-lucide="shield-check" style="width:16px;height:16px;color:#10b981;"></i>
+                        </div>
+                        <div>
+                            <h4 style="font-size:13px;font-weight:700;color:#fff;margin:0;">Zimbabwe National Reserve & Mining Hub Impact</h4>
+                            <div style="font-size:11px;color:var(--text-secondary);">Reserve Bank of Zimbabwe (RBZ) • MMCZ Beneficiation & Statutory Royalty Framework</div>
+                        </div>
+                    </div>
+                    <p class="zim-card-desc" id="mm-zim-desc">
+                        Direct asset backing for the Zimbabwe Gold (ZiG) sovereign currency. Small-scale and artisanal miners deliver gold directly to Fidelity Gold Refinery buying centres across the Midlands, Mashonaland, and Matabeleland greenstone belts.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MENTOR BOOKING MODAL ===== -->
+    <div id="modal-mentor-booking" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 520px;">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i data-lucide="calendar" style="color:var(--text-accent);"></i>
+                    <span>Schedule Advisory Session</span>
+                </div>
+                <button class="modal-close" id="close-mentor-modal">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="mentor-booking-summary" id="modal-mentor-summary">
+                    <!-- Populated when clicking book -->
+                </div>
+                <form id="form-book-mentor" style="margin-top: 15px; display: flex; flex-direction: column; gap: 12px;">
+                    <input type="hidden" id="booking-mentor-id">
+                    <div>
+                        <label style="font-size:11px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:4px;">Applicant / Cooperative Name</label>
+                        <input type="text" id="booking-applicant-name" class="form-input" placeholder="e.g. Takunda Mhandu / Zvishavane Miners Syndicate" required>
+                    </div>
+                    <div>
+                        <label style="font-size:11px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:4px;">EcoCash Phone / Email</label>
+                        <input type="text" id="booking-applicant-contact" class="form-input" placeholder="e.g. +263 779 770 395 or mhandu@gmail.com" required>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div>
+                            <label style="font-size:11px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:4px;">Preferred Date</label>
+                            <input type="date" id="booking-date" class="form-input" value="2026-10-12" required>
+                        </div>
+                        <div>
+                            <label style="font-size:11px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:4px;">Time</label>
+                            <select id="booking-time" class="form-input">
+                                <option value="09:00 AM">09:00 AM</option>
+                                <option value="11:30 AM" selected>11:30 AM</option>
+                                <option value="02:00 PM">02:00 PM</option>
+                                <option value="04:30 PM">04:30 PM</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-size:11px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:4px;">Session Type</label>
+                        <select id="booking-type" class="form-input">
+                            <option value="Virtual 1-on-1 (Secure Video)">Virtual 1-on-1 (Secure Hub Link)</option>
+                            <option value="On-Site Concession Inspection">On-Site Concession Field Inspection</option>
+                            <option value="Metallurgical Lab Sample Review">Metallurgical Lab Sample Review</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:4px;">Key Technical Challenge / Questions</label>
+                        <textarea id="booking-topic" class="form-input" rows="3" placeholder="Briefly describe what mineral, seam, or processing hurdle you need guidance on..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary" id="btn-submit-booking" style="width:100%; margin-top:5px; padding:10px;">
+                        <i data-lucide="check-circle-2" style="width:16px;height:16px;"></i>
+                        Confirm Free Mentorship Booking
+                    </button>
+                </form>
+                <div id="booking-success-card" class="hidden" style="margin-top:15px; padding:14px; border-radius:8px; background:rgba(16, 185, 129, 0.1); border:1px solid #10b981; color:#fff;">
+                    <div style="font-weight:700; color:#10b981; font-size:13px; display:flex; align-items:center; gap:6px;">
+                        <i data-lucide="check-circle" style="width:16px;height:16px;"></i> Session Confirmed!
+                    </div>
+                    <p style="font-size:11.5px; color:#cbd5e1; margin:6px 0 0;" id="booking-success-msg"></p>
+                </div>
+            </div>
+        </div>
+    <!-- ===== FIELD OPTICAL CAMERA & SPECIMEN ANALYZER MODAL ===== -->
+    <div id="modal-camera-capture" class="modal-overlay hidden">
+        <div class="modal-card camera-modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i data-lucide="camera" style="color:#10b981;"></i>
+                    <span>Field Optical Camera & Mineral Specimen Analyzer</span>
+                </div>
+                <div class="modal-header-badges">
+                    <span class="hud-status-badge"><span class="hud-dot"></span> LIVE OPTICAL HUD</span>
+                    <button class="modal-close" id="close-camera-modal">&times;</button>
+                </div>
+            </div>
+
+            <div class="modal-body camera-modal-body">
+                <!-- VIEW 1: LIVE VIEWFINDER -->
+                <div id="camera-viewfinder-container" class="camera-viewfinder-container">
+                    <div class="camera-stream-wrapper">
+                        <video id="camera-video" autoplay playsinline muted></video>
+                        <canvas id="camera-canvas" style="display:none;"></canvas>
+
+                        <!-- High Tech HUD Overlay -->
+                        <div class="camera-hud-overlay">
+                            <!-- Reticle Corners -->
+                            <div class="hud-corner top-left"></div>
+                            <div class="hud-corner top-right"></div>
+                            <div class="hud-corner bottom-left"></div>
+                            <div class="hud-corner bottom-right"></div>
+                            
+                            <!-- Scanning Laser Line -->
+                            <div class="hud-scanline"></div>
+
+                            <!-- Center Crosshair Reticle -->
+                            <div class="hud-crosshair">
+                                <div class="reticle-circle"></div>
+                                <div class="reticle-h"></div>
+                                <div class="reticle-v"></div>
+                            </div>
+
+                            <!-- Metadata telemetry overlay -->
+                            <div class="hud-telemetry-top">
+                                <span class="telem-item">MODE: SPECIMEN SPECTRAL CAPTURE</span>
+                                <span class="telem-item" id="cam-gps-telem">GPS: -18.332°S, 29.915°E (Kadoma)</span>
+                            </div>
+                            <div class="hud-telemetry-bottom">
+                                <span class="telem-item" id="cam-facing-telem">LENS: REAR / ENVIRONMENT</span>
+                                <span class="telem-item">ILLUMINANT: D65 STANDARD</span>
+                            </div>
+                        </div>
+
+                        <!-- Fallback Notice (if webcam blocked / permission denied) -->
+                        <div id="camera-error-banner" class="camera-error-banner hidden">
+                            <i data-lucide="camera-off" style="width:32px; height:32px; color:#f59e0b;"></i>
+                            <div class="cam-err-title">Live Camera Unavailable</div>
+                            <p class="cam-err-desc">
+                                Live webcam capture is unavailable or requires device camera permission. You can select any rock, ore, or outcrop image directly from your device storage:
+                            </p>
+                            <label class="btn-primary" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
+                                <i data-lucide="upload"></i> Select Specimen Photo
+                                <input type="file" id="camera-fallback-input" accept="image/*" style="display:none;">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Viewfinder Action Bar -->
+                    <div class="camera-controls-bar">
+                        <button class="cam-ctrl-btn" id="btn-flip-camera" type="button" title="Switch Lens">
+                            <i data-lucide="refresh-cw"></i>
+                            <span>Flip Lens</span>
+                        </button>
+                        <button class="cam-shutter-btn" id="btn-take-photo" type="button" title="Capture and analyze rock specimen">
+                            <div class="shutter-inner">
+                                <i data-lucide="aperture" style="width:24px; height:24px;"></i>
+                            </div>
+                            <span>Capture Specimen</span>
+                        </button>
+                        <label class="cam-ctrl-btn" title="Choose file from disk" style="cursor:pointer;">
+                            <i data-lucide="image"></i>
+                            <span>Upload</span>
+                            <input type="file" id="camera-modal-file-input" accept="image/*" style="display:none;">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: SPECIMEN ANALYSIS REPORT (Shown after capture or upload) -->
+                <div id="camera-analysis-container" class="camera-analysis-container hidden">
+                    <div class="analysis-grid">
+                        <!-- Left: Image Preview & Sample Area -->
+                        <div class="analysis-preview-card">
+                            <div class="preview-header">
+                                <span>Captured Specimen Viewport</span>
+                                <span class="badge-success">Analyzed (100%)</span>
+                            </div>
+                            <div class="preview-img-wrap">
+                                <img id="captured-specimen-img" class="captured-specimen-img" alt="Captured Specimen">
+                                <canvas id="analysis-histogram-canvas" class="histogram-canvas" width="280" height="70"></canvas>
+                            </div>
+                            <div class="sample-coord-row">
+                                <i data-lucide="map-pin" style="width:13px;height:13px;color:var(--text-accent);"></i>
+                                <span id="specimen-coords-text">Lat -18.3320°, Lon 29.9150° • Kadoma Gold Corridor</span>
+                            </div>
+                        </div>
+
+                        <!-- Right: AI / Spectral Mineral Classification -->
+                        <div class="analysis-details-card">
+                            <div class="classification-header">
+                                <div class="class-title-group">
+                                    <span class="class-label">PREDICTED MINERAL GROUP</span>
+                                    <h3 class="class-name" id="analysis-mineral-name">Gossanous Ironstone (Hematite / Goethite)</h3>
+                                </div>
+                                <div class="class-confidence-badge" id="analysis-confidence">
+                                    <span class="conf-val" id="analysis-conf-value">91.4%</span>
+                                    <span class="conf-lbl">Confidence</span>
+                                </div>
+                            </div>
+
+                            <!-- Channel Bar Metrics -->
+                            <div class="spectral-metrics-list">
+                                <div class="metric-row">
+                                    <span class="metric-lbl">Red Channel (Ferric Reflectance)</span>
+                                    <div class="metric-bar-wrap">
+                                        <div class="metric-bar-fill red" id="metric-bar-r" style="width: 72%;"></div>
+                                    </div>
+                                    <span class="metric-val" id="metric-val-r">72%</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-lbl">Green Channel (Silicate Reflectance)</span>
+                                    <div class="metric-bar-wrap">
+                                        <div class="metric-bar-fill green" id="metric-bar-g" style="width: 44%;"></div>
+                                    </div>
+                                    <span class="metric-val" id="metric-val-g">44%</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-lbl">Blue Channel (Atmospheric Scatter)</span>
+                                    <div class="metric-bar-wrap">
+                                        <div class="metric-bar-fill blue" id="metric-bar-b" style="width: 25%;"></div>
+                                    </div>
+                                    <span class="metric-val" id="metric-val-b">25%</span>
+                                </div>
+                            </div>
+
+                            <!-- Derived Indices -->
+                            <div class="derived-indices-grid">
+                                <div class="index-box">
+                                    <span class="index-lbl">Iron Oxide Ratio (R/B)</span>
+                                    <span class="index-val" id="index-val-iron">2.88</span>
+                                    <span class="index-sub text-warning">Strong Gossan Cap</span>
+                                </div>
+                                <div class="index-box">
+                                    <span class="index-lbl">Hydrothermal Alteration</span>
+                                    <span class="index-val" id="index-val-alteration">74.2%</span>
+                                    <span class="index-sub text-success">High Probability</span>
+                                </div>
+                                <div class="index-box">
+                                    <span class="index-lbl">Prospective Commodities</span>
+                                    <span class="index-val" id="index-val-commodities" style="font-size:12px;">Gold (Au), Copper (Cu)</span>
+                                    <span class="index-sub">Archaean Vein Host</span>
+                                </div>
+                            </div>
+
+                            <p class="geological-desc-text" id="analysis-geological-notes">
+                                Specimen displays characteristic reddish-brown hematite staining with quartz veining typical of oxidized mineralized caps above sulfide gold deposits in the Zimbabwe craton.
+                            </p>
+
+                            <!-- Analysis Actions -->
+                            <div class="analysis-action-bar">
+                                <button class="btn-primary" id="btn-add-groundtruth-map" type="button">
+                                    <i data-lucide="map-pin"></i> Plot on Map
+                                </button>
+                                <button class="btn-secondary" id="btn-export-specimen-pdf" type="button">
+                                    <i data-lucide="download"></i> Save Report
+                                </button>
+                                <button class="btn-ghost" id="btn-retake-camera" type="button">
+                                    <i data-lucide="rotate-ccw"></i> New Scan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== GOOGLE EARTH ENGINE (GEE) SUITE MODAL ===== -->
+    <div id="modal-gee-app" class="modal-overlay hidden">
+        <div class="modal-card gee-modal-card">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <div class="modal-title-col">
+                    <div class="modal-badge gee-header-badge">
+                        <i data-lucide="globe" style="width:13px;height:13px;color:#38bdf8;"></i>
+                        GOOGLE EARTH ENGINE • ZIMBABWE SATELLITE ENGINE
+                    </div>
+                    <h2 class="modal-title" style="font-size:18px;">GEE Mineral &amp; Earth Observation App</h2>
+                </div>
+
+                <!-- Right Actions: URL Configuration, External Link, Fullscreen, Close -->
+                <div class="gee-modal-top-actions">
+                    <div class="gee-url-input-group">
+                        <span class="gee-url-prefix">GEE App:</span>
+                        <input type="url" id="gee-modal-url-input" class="gee-url-input" 
+                               placeholder="Paste your GEE App URL (https://...)" 
+                               value="https://earthengine.google.com">
+                        <button id="btn-save-gee-url" class="gee-save-url-btn" type="button" title="Load Custom GEE App">
+                            <i data-lucide="check" style="width:13px;height:13px;"></i>
+                            <span>Connect</span>
+                        </button>
+                    </div>
+
+                    <a id="gee-open-external-link" href="https://earthengine.google.com" target="_blank" rel="noopener noreferrer" class="gee-icon-action-btn" title="Open GEE in Full Browser Window">
+                        <i data-lucide="external-link"></i>
+                    </a>
+                    <button id="btn-toggle-gee-fullscreen" class="gee-icon-action-btn" type="button" title="Toggle Fullscreen">
+                        <i data-lucide="maximize-2"></i>
+                    </button>
+                    <button class="modal-close" id="close-gee-modal">&times;</button>
+                </div>
+            </div>
+
+            <!-- Modal Navigation Tabs -->
+            <div class="modal-tabs">
+                <button class="modal-tab-btn active" data-gee-tab="gee-app-view">
+                    <i data-lucide="layout" style="width:14px;height:14px;"></i>
+                    <span>Live GEE Application</span>
+                </button>
+                <button class="modal-tab-btn" data-gee-tab="gee-script-console">
+                    <i data-lucide="code-2" style="width:14px;height:14px;"></i>
+                    <span>Earth Engine Script &amp; Code Editor</span>
+                </button>
+                <button class="modal-tab-btn" data-gee-tab="gee-datasets">
+                    <i data-lucide="database" style="width:14px;height:14px;"></i>
+                    <span>Zimbabwe Datasets (Rivers &amp; Soil)</span>
+                </button>
+            </div>
+
+            <!-- Modal Body Content -->
+            <div class="modal-body gee-modal-body">
+                <!-- TAB 1: LIVE GEE APP VIEW -->
+                <div class="gee-tab-pane active" id="pane-gee-app-view">
+                    <div class="gee-app-container">
+                        <!-- Custom GEE App Banner Reminder -->
+                        <div class="gee-live-status-bar">
+                            <div class="gee-status-text">
+                                <span class="gee-pulse-dot"></span>
+                                <span>Active GEE Engine Session:</span>
+                                <strong id="gee-active-engine-title">Zimbabwe Spectral Exploration Console</strong>
+                            </div>
+                            <div class="gee-status-pill">
+                                <span>Cloud API Latency: 38ms • Resolution: 10m Sentinel-2 MSI</span>
+                            </div>
+                        </div>
+
+                        <!-- Iframe container for the user's GEE App -->
+                        <div class="gee-iframe-wrapper">
+                            <iframe id="gee-app-iframe" 
+                                    src="about:blank" 
+                                    title="Google Earth Engine App" 
+                                    class="hidden"
+                                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals">
+                            </iframe>
+                            
+                            <!-- Interactive GEE Console view that renders when using default explorer -->
+                            <div id="gee-default-explorer" class="gee-default-explorer">
+                                <div class="gee-explorer-header">
+                                    <div class="gee-brand-tag">
+                                        <i data-lucide="satellite" style="color:#38bdf8;"></i>
+                                        <span>EARTH ENGINE MULTI-BAND COMPOSITOR — ZIMBABWE</span>
+                                    </div>
+                                    <div class="gee-preset-buttons">
+                                        <button class="gee-preset-btn active" data-preset="great-dyke" type="button">Great Dyke PGE</button>
+                                        <button class="gee-preset-btn" data-preset="kadoma-gold" type="button">Kadoma Gold Gossan</button>
+                                        <button class="gee-preset-btn" data-preset="bikita-lithium" type="button">Bikita Lithium Clay</button>
+                                        <button class="gee-preset-btn" data-preset="rivers-drainage" type="button">River Alluvials</button>
+                                    </div>
+                                </div>
+
+                                <div class="gee-interactive-screen">
+                                    <div class="gee-screen-left">
+                                        <div class="gee-satellite-feed" id="gee-sat-feed">
+                                            <div class="gee-feed-overlay">
+                                                <div class="feed-badge" id="gee-feed-badge">SENTINEL-2 L2A (10m) • GREAT DYKE PGE BAND COMPOSITE</div>
+                                                <div class="gee-crosshair-hud"></div>
+                                                <div class="feed-coords">Centroid: 19.670°S, 30.005°E • Cloud Cover: &lt; 1.8%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="gee-screen-right">
+                                        <h4 class="gee-panel-title">GEE Band Processing Pipeline</h4>
+                                        <div class="gee-pipeline-step">
+                                            <div class="step-num">01</div>
+                                            <div class="step-content">
+                                                <div class="step-title">Collection Filter</div>
+                                                <div class="step-code">ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')</div>
+                                            </div>
+                                        </div>
+                                        <div class="gee-pipeline-step">
+                                            <div class="step-num">02</div>
+                                            <div class="step-content">
+                                                <div class="step-title">Cloud Masking &amp; Median Composite</div>
+                                                <div class="step-code">QA60 mask &amp; SCL valid land filter (2024-2026)</div>
+                                            </div>
+                                        </div>
+                                        <div class="gee-pipeline-step">
+                                            <div class="step-num">03</div>
+                                            <div class="step-content">
+                                                <div class="step-title">Spectral Mineral Ratio Calculation</div>
+                                                <div class="step-code">Iron Oxide = B4 / B2 | Clay = B11 / B12</div>
+                                            </div>
+                                        </div>
+                                        <div class="gee-pipeline-step">
+                                            <div class="step-num">04</div>
+                                            <div class="step-content">
+                                                <div class="step-title">Vector Mask &amp; Cadastre Overlay</div>
+                                                <div class="step-code">Clip to Zimbabwe Boundary &amp; Mining Cadastre</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="gee-cta-box">
+                                            <p class="gee-cta-text">
+                                                <strong>Have your custom GEE App link?</strong><br>
+                                                Paste it in the URL bar above and click <strong>Connect</strong>. It will embed and launch directly inside this viewer.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: EARTH ENGINE SCRIPT & CODE EDITOR -->
+                <div class="gee-tab-pane hidden" id="pane-gee-script-console">
+                    <div class="gee-script-wrapper">
+                        <div class="gee-script-toolbar">
+                            <span class="script-title">Google Earth Engine (JavaScript) Mineral Prospecting Script</span>
+                            <button class="btn-copy-script" id="btn-copy-gee-script" type="button">
+                                <i data-lucide="copy" style="width:13px;height:13px;"></i> Copy Script
+                            </button>
+                        </div>
+                        <pre class="gee-code-pre"><code id="gee-code-block" class="language-javascript">// ============================================================
+// Google Earth Engine — Zimbabwe National Mineral Intelligence Hub
+// Sentinel-2 MSI Multi-Spectral Alteration &amp; Geological Analysis
+// ============================================================
+
+var zimBoundary = ee.FeatureCollection("FAO/GAUL/2015/level0")
+  .filter(ee.Filter.eq('ADM0_NAME', 'Zimbabwe'));
+
+// Sentinel-2 Level-2A Surface Reflectance Harmonized
+var s2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+  .filterBounds(zimBoundary)
+  .filterDate('2025-01-01', '2026-03-31')
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 10));
+
+// Mask clouds &amp; shadows
+function maskS2sr(image) {
+  var qa = image.select('QA60');
+  var cloudBitMask = 1 &lt;&lt; 10;
+  var cirrusBitMask = 1 &lt;&lt; 11;
+  var mask = qa.bitwiseAnd(cloudBitMask).eq(0)
+    .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+  return image.updateMask(mask).divide(10000);
+}
+
+var composite = s2.map(maskS2sr).median().clip(zimBoundary);
+
+// 1. Iron Oxide Index (Gossan Indicator: B4/B2)
+var ironOxide = composite.select('B4').divide(composite.select('B2'))
+  .rename('iron_oxide');
+
+// 2. Clay Minerals / Hydrothermal Alteration Index (B11/B12)
+var clayIndex = composite.select('B11').divide(composite.select('B12'))
+  .rename('clay_minerals');
+
+// 3. Ferrous Iron Index (SWIR + NIR)
+var ferrousIron = composite.select('B12').divide(composite.select('B8'))
+  .rename('ferrous_iron');
+
+// Visualization Palettes
+Map.centerObject(zimBoundary, 7);
+Map.addLayer(composite, {bands: ['B4', 'B3', 'B2'], min: 0, max: 0.3}, 'S2 True Color');
+Map.addLayer(ironOxide, {min: 1.0, max: 2.8, palette: ['blue', 'cyan', 'yellow', 'orange', 'red']}, 'Iron Oxide Gossan (B4/B2)');
+Map.addLayer(clayIndex, {min: 1.0, max: 2.2, palette: ['purple', 'blue', 'green', 'yellow']}, 'Hydrothermal Clay (B11/B12)');
+</code></pre>
+                    </div>
+                </div>
+
+                <!-- TAB 3: ZIMBABWE DATASETS (RIVERS & SOILS) -->
+                <div class="gee-tab-pane hidden" id="pane-gee-datasets">
+                    <div class="gee-datasets-grid">
+                        <div class="dataset-card">
+                            <div class="dataset-card-header">
+                                <i data-lucide="waves" style="color:#0ea5e9;"></i>
+                                <h4>Zimbabwe Rivers &amp; Drainage Basin Network</h4>
+                            </div>
+                            <p class="dataset-card-desc">
+                                Sourced from <code>F:\Datasets\DATA_SETS\Rivers - Zimbabwe (my codes)</code>. Contains major alluvial drainage networks (Zambezi, Limpopo, Save, Runde, Manyame, Mazowe) critical for alluvial gold panning and secondary diamond placer identification.
+                            </p>
+                            <div class="dataset-meta-tags">
+                                <span class="d-tag">GeoJSON / Shapefile</span>
+                                <span class="d-tag">Hydrographic Polylines</span>
+                                <span class="d-tag">100% Zimbabwe Coverage</span>
+                            </div>
+                        </div>
+
+                        <div class="dataset-card">
+                            <div class="dataset-card-header">
+                                <i data-lucide="mountain" style="color:#f59e0b;"></i>
+                                <h4>World Soil &amp; Zimbabwe Lithology Database</h4>
+                            </div>
+                            <p class="dataset-card-desc">
+                                Sourced from <code>F:\Datasets\DATA_SETS\World Soil Data</code>. Harmonized World Soil Database (HWSD) mapping ferralsols, vertisols, lithosols, and serpentine ultramafic soils along the Great Dyke and Archaean Greenstone belts.
+                            </p>
+                            <div class="dataset-meta-tags">
+                                <span class="d-tag">HWSD / FAO</span>
+                                <span class="d-tag">Clay / Organic Carbon</span>
+                                <span class="d-tag">Soil Geochemistry</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Main Dashboard Application Logic -->
+    <script src="app.js?v=20261002_02"></script>
+
+    <script>
+        // Initialize Lucide icons on page load
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+
+</html>
