@@ -35,7 +35,7 @@ if 'auth_service' not in st.session_state or 'p2p_fixed' not in st.session_state
     st.session_state.p2p_fixed = True
     # Seed Admin User again just in case
     st.session_state.auth_service.seed_admin(
-        "mhandutakunda@gmail.com", "Mimosa@2030", "Takunda Nigel Mhandu", "+263779770395"
+        os.environ.get("NMIH_ADMIN_EMAIL", "mhandutakunda@gmail.com"), os.environ.get("NMIH_ADMIN_PASSWORD", ""), "Takunda Nigel Mhandu", "+263779770395"
     )
 
 # Initialize Session State for Auth
