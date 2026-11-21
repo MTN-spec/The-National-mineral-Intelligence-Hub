@@ -13,3 +13,5 @@ geopandas
 streamlit
 streamlit-folium
 streamlit-js-eval
+psycopg2-binary
+requests

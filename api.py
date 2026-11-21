@@ -23,6 +23,7 @@ from boundary_service import boundary_service
 from mentorship_service import mentorship_service
 from api_gateway import EcoCashGateway, SmsService, EmailService, APILogger
 from mock_services import AkelloService, EcoCashService, GigEngine
+import db as pg_db
 
 # Initialize FastAPI App
 app = FastAPI(
@@ -520,10 +521,12 @@ SPECTRAL_INDICES = [
 # ==========================================
 @app.get("/api/health")
 def health_check():
+    db_status = pg_db.check_db_health()
     return {
         "status": "healthy",
         "system": "The National Mineral Intelligence Hub",
         "security_standard": "MTN-SPEC Banking-Grade (PBKDF2-SHA256 + HMAC-SHA256)",
+        "database": db_status,
         "year": 2026,
         "timestamp": datetime.datetime.now().isoformat()
     }
@@ -572,18 +575,26 @@ def register(req: RegisterRequest):
 # --- MINING CONCESSIONS & CLAIMS ---
 @app.get("/api/concessions")
 def get_concessions(filter_status: Optional[str] = Query(None)):
-    """Return all monitored mining concessions and claims across Zimbabwe."""
-    data = MINING_CONCESSIONS
-    if filter_status and filter_status != "all":
-        data = [c for c in data if c["status"].lower() == filter_status.lower() or c["yield_rating"].lower().replace(" ", "") == filter_status.lower()]
+    """Return all monitored mining concessions and claims across Zimbabwe from PostgreSQL/PostGIS."""
+    if pg_db.is_db_configured():
+        data = pg_db.query_concessions_from_db(filter_status)
+        all_data = pg_db.query_concessions_from_db(None) if filter_status and filter_status != "all" else data
+        source = "PostgreSQL/PostGIS"
+    else:
+        all_data = MINING_CONCESSIONS
+        data = MINING_CONCESSIONS
+        if filter_status and filter_status != "all":
+            data = [c for c in data if c["status"].lower() == filter_status.lower() or c["yield_rating"].lower().replace(" ", "") == filter_status.lower()]
+        source = "in-memory (DATABASE_URL unset)"
     return {
+        "source": source,
         "total": len(data),
         "concessions": data,
         "summary": {
-            "total_monitored": len(MINING_CONCESSIONS),
-            "high_yield_count": sum(1 for c in MINING_CONCESSIONS if c["yield_rating"] == "High Yield"),
-            "active_count": sum(1 for c in MINING_CONCESSIONS if c["status"] == "Active"),
-            "alerts_count": sum(1 for c in MINING_CONCESSIONS if c["status"] == "Warning" or c["risk_level"] == "Severe")
+            "total_monitored": len(all_data),
+            "high_yield_count": sum(1 for c in all_data if c.get("yield_rating") == "High Yield"),
+            "active_count": sum(1 for c in all_data if "active" in str(c.get("status", "")).lower()),
+            "alerts_count": sum(1 for c in all_data if c.get("status") == "Warning" or c.get("risk_level") == "Severe")
         }
     }
 
@@ -664,6 +675,11 @@ def get_boundaries_summary(refresh: bool = False):
 @app.get("/api/market/prices")
 def get_market_prices():
     prices = market_service.get_prices_list()
+    if pg_db.is_db_configured():
+        try:
+            pg_db.record_market_snapshot(prices)
+        except Exception as e:
+            print(f"[Market Snapshot DB Warn]: {e}")
     gold_item = next((p for p in prices if "Gold" in p["name"]), None)
     plat_item = next((p for p in prices if "Platinum" in p["name"]), None)
     lith_item = next((p for p in prices if "Lithium" in p["name"]), None)
@@ -833,6 +849,21 @@ def generate_permit(req: PermitRequest):
     }
     permit_payload["hmac_signature"] = _sign_permit_payload(permit_payload)
 
+    if pg_db.is_db_configured():
+        try:
+            pg_db.record_permit_to_db({
+                "permit_id": permit_id,
+                "claim_id": permit_payload["concession_id"],
+                "mineral_type": permit_payload["mineral"],
+                "tonnage_mt": permit_payload["tonnage"],
+                "origin_district": "Zimbabwe",
+                "destination_plant": permit_payload["destination"],
+                "transporter_reg": permit_payload["vehicle"],
+                "hmac_signature": permit_payload["hmac_signature"],
+            })
+        except Exception as e:
+            print(f"[Permit DB Warn]: {e}")
+
     qr = qrcode.QRCode(version=1, box_size=8, border=2)
     qr.add_data(json.dumps(permit_payload))
     qr.make(fit=True)
@@ -915,6 +946,122 @@ def book_mentor(req: MentorBookingRequest):
         return {"success": True, "message": "Advisory session booked successfully", "booking": booking}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# --- LIVE POSTGIS BOREHOLES, SPATIAL ANALYTICS, AI TELEMETRY & LLM ADVISOR ---
+class SpatialAdvisorRequest(BaseModel):
+    target_name: str = "Selected Exploration Target"
+    lat: float
+    lng: float
+    radius_m: int = 2500
+    question: str = "Generate an executive JORC/SAMREC technical prospect appraisal for this location."
+
+
+@app.get("/api/boreholes")
+def get_boreholes(domain: Optional[str] = Query(None), limit: int = Query(1000, ge=1, le=5000)):
+    if not pg_db.is_db_configured():
+        raise HTTPException(status_code=503, detail="DATABASE_URL not configured. PostGIS required.")
+    return pg_db.query_boreholes_geojson(domain=domain, limit=limit)
+
+
+@app.get("/api/spatial/analyze")
+def spatial_analyze(lat: float = Query(...), lng: float = Query(...), radius_m: int = Query(2500, ge=100, le=50000)):
+    if not pg_db.is_db_configured():
+        raise HTTPException(status_code=503, detail="DATABASE_URL not configured. PostGIS required.")
+    return pg_db.analyze_spatial_target(lat=lat, lng=lng, radius_m=radius_m)
+
+
+@app.get("/api/ai/telemetry")
+def get_ai_telemetry():
+    if not pg_db.is_db_configured():
+        raise HTTPException(status_code=503, detail="DATABASE_URL not configured. PostGIS required.")
+    data = pg_db.get_latest_ai_telemetry()
+    if not data:
+        raise HTTPException(status_code=404, detail="No AI training runs recorded in database.")
+    return data
+
+
+@app.post("/api/ai/advisor")
+def ai_geological_advisor(req: SpatialAdvisorRequest):
+    if not pg_db.is_db_configured():
+        raise HTTPException(status_code=503, detail="DATABASE_URL not configured. PostGIS required.")
+
+    spatial_ctx = pg_db.analyze_spatial_target(lat=req.lat, lng=req.lng, radius_m=req.radius_m)
+    bh = spatial_ctx.get("borehole_analytics", {})
+    fault = spatial_ctx.get("nearest_fault", {})
+    block = spatial_ctx.get("enclosing_resource_block") or {}
+    crs_arc = spatial_ctx.get("coordinates", {}).get("arc1950_utm36s", {})
+
+    gemini_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    model_used = "postgis-spatial-rag"
+    answer_text = ""
+
+    if gemini_key:
+        try:
+            import requests as http_requests
+            system_prompt = (
+                "You are the Chief Exploration Geologist & Mining Investment Advisor for MTN-SPEC (Zimbabwe). "
+                "Provide concise, authoritative, JORC/SAMREC-aligned technical prospect appraisals using ONLY "
+                "the verified PostGIS spatial telemetry provided. Never invent unverified drill grades."
+            )
+            user_prompt = (
+                f"Target: {req.target_name}\n"
+                f"Client Question: {req.question}\n"
+                f"Verified PostGIS Spatial Context:\n{json.dumps(spatial_ctx, indent=2)}"
+            )
+            resp = http_requests.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}",
+                json={
+                    "contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_prompt}"}]}],
+                    "generationConfig": {"temperature": 0.25, "maxOutputTokens": 650},
+                },
+                timeout=15,
+            )
+            if resp.ok:
+                candidates = resp.json().get("candidates", [])
+                if candidates:
+                    answer_text = candidates[0]["content"]["parts"][0]["text"]
+                    model_used = "gemini-2.0-flash+postgis-rag"
+        except Exception as e:
+            print(f"[Gemini Advisor Warn]: {e}")
+
+    if not answer_text:
+        bh_cnt = bh.get("borehole_count") or 0
+        avg_rl = bh.get("avg_msz_rl_m")
+        avg_depth = bh.get("avg_msz_depth_m")
+        oxide_cnt = bh.get("oxide_count") or 0
+        struc_cnt = bh.get("structural_fault_flags") or 0
+        fault_dist = fault.get("distance_m")
+        fault_name = fault.get("name") or "Mapped Structural Lineament"
+        block_name = block.get("block_name") or "Outside Great Dyke Resource Block"
+
+        answer_text = (
+            f"### MTN-SPEC Technical Appraisal: {req.target_name}\n"
+            f"- **Legal Projection (Arc 1950 UTM 36S):** E {crs_arc.get('easting')} m, N {crs_arc.get('northing')} m\n"
+            f"- **Resource Domain:** {block_name}\n"
+            f"- **Subsurface Control ({req.radius_m}m PostGIS Radius):** {bh_cnt} desurveyed drillholes intercepted"
+            + (f" (Mean MSZ RL: {avg_rl} m, Mean Depth: {avg_depth} m, Oxide Holes: {oxide_cnt}, Structural Flags: {struc_cnt}).\n" if bh_cnt > 0 else ".\n")
+            + f"- **Structural Risk:** Nearest fault ({fault_name}) is {fault_dist} m away.\n"
+            + "- **Recommendation:** "
+            + ("High subsurface confidence; prioritize fresh sulphide MSZ core logging and geotechnical bolting near structural zones." if bh_cnt > 0 else "Greenfield target outside dense Mimosa drill grid; commission Sentinel-2 B4/B2 gossan verification and preliminary trenching.")
+        )
+
+    inquiry_id = pg_db.record_advisor_inquiry(
+        target_name=_sanitize_text(req.target_name, 200),
+        lat=req.lat,
+        lng=req.lng,
+        question=_sanitize_text(req.question, 1000),
+        spatial_context=spatial_ctx,
+        response_text=answer_text,
+        model_used=model_used,
+    )
+
+    return {
+        "inquiry_id": inquiry_id,
+        "model_used": model_used,
+        "spatial_context": spatial_ctx,
+        "appraisal": answer_text,
+    }
 
 
 # --- STATIC FILES FOR DASHBOARD & ASSETS ---
